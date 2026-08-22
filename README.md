@@ -10,7 +10,7 @@ MarMic Server является проприетарным ПО. Публичны
 
 ## Быстрый старт — Preview
 
-Текущий проверенный preview: `v0.12.4-stage4a.1`, Linux `x86_64/amd64`.
+Текущий проверенный preview: `v0.12.4-stage4a.2`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -109,7 +109,7 @@ TCP `4000` и `7880` наружу открывать не нужно.
 
 ## Текущий статус Preview
 
-Production MarMic Hub Registry и Beget DNS provisioning уже развёрнуты и проверены. Artifact `v0.12.4-stage4a.1` прошёл локальный extracted-install и полный Compose smoke: MarMic Server + LiveKit + Caddy, а server identity сохранялась после recreate.
+Production MarMic Hub Registry и Beget DNS provisioning уже развёрнуты и проверены. Artifact `v0.12.4-stage4a.2` прошёл локальный extracted-install и полный Compose smoke: MarMic Server + LiveKit + Caddy, а server identity сохранялась после recreate.
 
 Что ещё остаётся до снятия Preview:
 - реальный end-to-end smoke на отдельной внешней/изолированной Linux-машине;
