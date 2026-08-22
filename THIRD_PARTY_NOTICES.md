@@ -18,8 +18,9 @@ MarMic Server использует стороннее программное о�
 | LiveKit Server SDK for Node.js | 2.17.0 | Apache-2.0 | <https://github.com/livekit/node-sdks> |
 | @livekit/protocol | 1.50.4 | Apache-2.0 | <https://github.com/livekit/protocol> |
 | LiveKit Server | 1.13.1 | Apache-2.0 | <https://github.com/livekit/livekit> |
+| Caddy | 2.10.2 | Apache-2.0 | <https://github.com/caddyserver/caddy> |
 | ws | 8.18.3 | MIT | <https://github.com/websockets/ws> |
 | Zod | 4.4.3 | MIT | <https://zod.dev/> |
 | SQLite | runtime format/engine used through better-sqlite3 | Public Domain | <https://www.sqlite.org/copyright.html> |
 
-Полные тексты лицензий и notices следует получать из официальных distributions и upstream repositories соответствующих компонентов. Перед публичной поставкой installer/runtime этот файл должен быть повторно сформирован по фактическому release artifact, включая его transitive и system components.
+Полные тексты лицензий и notices следует получать из официальных distributions и upstream repositories соответствующих компонентов. Этот список отражает подтверждённые основные компоненты Stage 3 artifact; transitive и system notices остаются применимыми в соответствии с их upstream distributions.

@@ -1,7 +1,14 @@
-# Сетевые порты
+# Сетевые порты Stage 3
 
-> Статус: Planned.
+Открываются только фактически опубликованные Compose ports:
 
-Официальный минимальный список портов будет опубликован вместе с installer и проверенной production topology.
+| Протокол | Порт | Назначение |
+| --- | ---: | --- |
+| TCP | 80 | Caddy: ACME HTTP challenge и redirect на HTTPS |
+| TCP | 443 | Caddy: HTTPS, API и WebSocket reverse proxy |
+| TCP | 7881 | LiveKit WebRTC TCP fallback |
+| UDP | 50000-50100 | LiveKit WebRTC media range |
 
-Пока список не зафиксирован, эта документация намеренно не предлагает номера портов или широкие firewall-правила. Владелец должен открывать только те endpoints и диапазоны, которые будут прямо указаны в актуальной официальной инструкции.
+MarMic Server `4000/tcp` и LiveKit signalling `7880/tcp` остаются внутри Docker
+network и наружу не публикуются. TURN ports отсутствуют: TURN не входит в
+Stage 3.
