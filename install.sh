@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.12.4-stage4a.2"
+VERSION="0.12.7"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="fdee0f4c5a0c3c3292cbb9fcfa8d0b4240a323553046528f27a12e226b00bf2f"
+PINNED_SHA256="caa0b313432b4d5782bc5177629ca1242ffae69977b9a7a37cf39d503673278c"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/marmic-bootstrap.XXXXXX")"
 
@@ -47,7 +47,13 @@ else
   echo "Artifact содержит небезопасные пути." >&2
   exit 1
 fi
-tar -xzf "$WORK_DIR/$ARTIFACT" -C "$WORK_DIR"
+if ! tar -xzf "$WORK_DIR/$ARTIFACT" -C "$WORK_DIR" 2>"$WORK_DIR/tar.log"; then
+  cat "$WORK_DIR/tar.log" >&2
+  exit 1
+fi
+if [ "${MARMIC_INSTALL_VERBOSE:-0}" = "1" ] && [ -s "$WORK_DIR/tar.log" ]; then
+  cat "$WORK_DIR/tar.log" >&2
+fi
 
 if [ "${MARMIC_BOOTSTRAP_VERIFY_ONLY:-0}" = "1" ]; then
   node -e '
@@ -78,8 +84,8 @@ docker compose version >/dev/null
 manifest="$WORK_DIR/$PAYLOAD/manifest.json"
 export MARMIC_SERVER_VERSION="$VERSION"
 export MARMIC_SERVER_IMAGE="$("$WORK_DIR/$PAYLOAD/runtime/node" -p "require(process.argv[1]).serverImage" "$manifest")"
-: "${MARMIC_REGISTRY_URL:?External VPS preview requires an explicit Registry URL until public one-command installation is enabled}"
-: "${MARMIC_IDENTITY_URL:?External VPS preview requires an explicit Identity URL until public one-command installation is enabled}"
+MARMIC_REGISTRY_URL="${MARMIC_REGISTRY_URL:-https://hub.marmos.udav.team}"
+MARMIC_IDENTITY_URL="${MARMIC_IDENTITY_URL:-https://hub.marmos.udav.team}"
 export MARMIC_REGISTRY_URL MARMIC_IDENTITY_URL
 
 "$WORK_DIR/$PAYLOAD/runtime/node" "$WORK_DIR/$PAYLOAD/bin/install.mjs"

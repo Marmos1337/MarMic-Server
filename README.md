@@ -8,9 +8,9 @@ MarMic Server — self-hosted сервер для MarMic. Он запускае�
 
 MarMic Server является проприетарным ПО. Публичный репозиторий содержит документацию и обозримый bootstrap installer; исходный код server runtime здесь не публикуется.
 
-## Быстрый старт — Preview
+## Быстрый старт
 
-Текущий проверенный preview: `v0.12.4-stage4a.2`, Linux `x86_64/amd64`.
+Текущий стабильный release: `v0.12.7`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -37,14 +37,10 @@ docker compose version
 
 Подробнее: [сетевые порты](docs/ports.md).
 
-### Установка Preview
+### Установка
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh \
-  | sudo env \
-      MARMIC_REGISTRY_URL=https://hub.marmos.udav.team \
-      MARMIC_IDENTITY_URL=https://hub.marmos.udav.team \
-      sh
+curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh | sudo sh
 ```
 
 Bootstrap:
@@ -103,25 +99,19 @@ sudo marmic restart
 
 TCP `4000` и `7880` наружу открывать не нужно.
 
-Если провайдер использует CGNAT и у вас нет входящего публичного IPv4, этот preview может быть недоступен извне. TURN пока не входит в текущую сборку.
+Если провайдер использует CGNAT и у вас нет входящего публичного IPv4, сервер может быть недоступен извне. TURN пока не входит в текущую сборку.
 
 Подробнее: [домашний сервер](docs/home-server.md).
 
-## Текущий статус Preview
+## Текущий статус
 
-Production MarMic Hub Registry и Beget DNS provisioning уже развёрнуты и проверены. Artifact `v0.12.4-stage4a.2` прошёл локальный extracted-install и полный Compose smoke: MarMic Server + LiveKit + Caddy, а server identity сохранялась после recreate.
+Production MarMic Hub Registry и Beget DNS provisioning развёрнуты и проверены. Artifact `v0.12.7` прошёл воспроизводимую сборку, extracted-install и полный Compose smoke: MarMic Server + LiveKit + Caddy; server identity сохраняется после recreate.
 
-Что ещё остаётся до снятия Preview:
-- реальный end-to-end smoke на отдельной внешней/изолированной Linux-машине;
-- проверка ACME/HTTPS в реальной сети;
-- проверка двух клиентов, text chat и voice;
-- continuous DDNS heartbeat agent;
+Внешний VPS flow, ACME/HTTPS, Owner Claim и подключение второго аккаунта проверены. В следующих версиях остаются:
 - официальный update agent;
 - официальный backup/restore CLI;
 - arm64;
 - TURN.
-
-Пока внешний smoke не закрыт, installer намеренно требует явные `MARMIC_REGISTRY_URL` и `MARMIC_IDENTITY_URL`. После успешного smoke официальный bootstrap будет упрощён до обычной one-command установки.
 
 ## Документация
 

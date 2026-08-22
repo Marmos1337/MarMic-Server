@@ -1,6 +1,6 @@
 # Установка MarMic Server
 
-> Текущий статус: Preview `v0.12.4-stage4a.2`.
+> Текущий стабильный release: `v0.12.7`.
 
 ## 1. Требования
 
@@ -36,17 +36,11 @@ docker compose version
 
 Для домашнего сервера дополнительно нужен port forwarding. См. [home-server.md](home-server.md).
 
-## 3. Установка Preview
+## 3. Установка
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh \
-  | sudo env \
-      MARMIC_REGISTRY_URL=https://hub.marmos.udav.team \
-      MARMIC_IDENTITY_URL=https://hub.marmos.udav.team \
-      sh
+curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh | sudo sh
 ```
-
-Сейчас URL задаются явно только потому, что установка ещё находится в Preview. После завершения внешнего end-to-end smoke bootstrap будет переключён на официальный Hub по умолчанию.
 
 ## 4. Что делает installer
 
@@ -146,11 +140,10 @@ sudo marmic version
 sudo marmic owner-token regenerate
 ```
 
-## 12. Что пока не входит в Preview
+## 12. Что пока не входит в текущий release
 
 - automatic update agent;
 - официальный `marmic backup` / `marmic restore`;
-- continuous DDNS heartbeat agent;
 - arm64;
 - TURN;
 - полностью автоматический сценарий для CGNAT.

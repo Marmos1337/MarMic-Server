@@ -10,7 +10,7 @@ MarMic Server можно запускать дома на Debian 12/Ubuntu 24.04
 - доступ к настройкам роутера;
 - возможность открыть firewall ports.
 
-Если провайдер использует CGNAT, обычный входящий доступ может быть невозможен. TURN пока не входит в Preview.
+Если провайдер использует CGNAT, обычный входящий доступ может быть невозможен. TURN пока не входит в текущую сборку.
 
 ## 1. Закрепите LAN-IP
 
@@ -34,11 +34,7 @@ MarMic Server можно запускать дома на Debian 12/Ubuntu 24.04
 ## 4. Установка
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh \
-  | sudo env \
-      MARMIC_REGISTRY_URL=https://hub.marmos.udav.team \
-      MARMIC_IDENTITY_URL=https://hub.marmos.udav.team \
-      sh
+curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh | sudo sh
 ```
 
 Installer получает адрес `xxxxxxxx.srv.marmic.udav.team`. DNS propagation может занимать **до 10 минут. Это нормально**.
@@ -53,7 +49,7 @@ Installer получает адрес `xxxxxxxx.srv.marmic.udav.team`. DNS propa
 
 ## 7. Динамический внешний IP
 
-Registry backend уже поддерживает безопасный DDNS update через authenticated heartbeat, но continuous DDNS heartbeat agent пока не считается завершённой частью Preview.
+Registry выполняет безопасный DDNS update по authenticated heartbeat сервера.
 
 ## 8. CGNAT
 
