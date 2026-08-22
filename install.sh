@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.12.4-stage3.1"
+VERSION="0.12.4-stage4a.1"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="23de87c61327a9c9e2aa19fe13e4aa86890e6e68042240476aebb243d7bd260a"
+PINNED_SHA256="f75962b24fb094703ba05ecd4511236c6feadacd72e20ad210db8d1625c2a1f8"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/marmic-bootstrap.XXXXXX")"
 
@@ -78,8 +78,8 @@ docker compose version >/dev/null
 manifest="$WORK_DIR/$PAYLOAD/manifest.json"
 export MARMIC_SERVER_VERSION="$VERSION"
 export MARMIC_SERVER_IMAGE="$("$WORK_DIR/$PAYLOAD/runtime/node" -p "require(process.argv[1]).serverImage" "$manifest")"
-: "${MARMIC_REGISTRY_URL:?Stage 3 preview requires an explicit Registry URL until the Hub rollout}"
-: "${MARMIC_IDENTITY_URL:?Stage 3 preview requires an explicit Identity URL until the Hub rollout}"
+: "${MARMIC_REGISTRY_URL:?External VPS preview requires an explicit Registry URL until public one-command installation is enabled}"
+: "${MARMIC_IDENTITY_URL:?External VPS preview requires an explicit Identity URL until public one-command installation is enabled}"
 export MARMIC_REGISTRY_URL MARMIC_IDENTITY_URL
 
 "$WORK_DIR/$PAYLOAD/runtime/node" "$WORK_DIR/$PAYLOAD/bin/install.mjs"
