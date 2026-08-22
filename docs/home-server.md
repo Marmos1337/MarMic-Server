@@ -1,23 +1,60 @@
 # Домашний MarMic Server
 
-> Статус: Stage 3 preview; требуется реальная проверка конкретной NAT topology.
+MarMic Server можно запускать дома на Debian 12/Ubuntu 24.04 `x86_64/amd64`.
 
-MarMic Server можно установить на домашний Debian/Ubuntu `x86_64` server. До
-запуска настройте статический LAN address для хоста и port forwarding:
+## Что требуется
 
-- TCP `80` → server TCP `80` (ACME/HTTP redirect);
-- TCP `443` → server TCP `443` (HTTPS/API/WebSocket);
-- TCP `7881` → server TCP `7881` (LiveKit WebRTC TCP fallback);
-- UDP `50000-50100` → тот же UDP range на server (LiveKit media).
+- Linux-сервер с Docker;
+- постоянный LAN-IP или DHCP reservation;
+- публичный IPv4 от провайдера;
+- доступ к настройкам роутера;
+- возможность открыть firewall ports.
 
-Не публикуйте внутренние ports `4000` и `7880`: они доступны только в Docker
-network. Разрешите те же внешние ports в host firewall. При CGNAT входящее
-подключение может быть невозможно без публичного IP; TURN в Stage 3 не входит.
+Если провайдер использует CGNAT, обычный входящий доступ может быть невозможен. TURN пока не входит в Preview.
 
-Installer регистрирует обнаруженный публичный IP и получает технический DNS.
-Распространение записи может занимать до 10 минут. Continuous DDNS agent при
-последующей смене домашнего IP остаётся задачей следующего этапа; Registry
-heartbeat endpoint уже поддерживает безопасное обновление.
+## 1. Закрепите LAN-IP
 
-После установки проверьте с внешней сети HTTPS, вход в MarMic и двусторонний
-voice. Локальная проверка из той же LAN может зависеть от NAT loopback роутера.
+Сделайте DHCP reservation на роутере, чтобы сервер не получал новый локальный IP после перезагрузки.
+
+## 2. Port forwarding
+
+| Протокол | Внешний порт | Внутренний порт | Назначение |
+| --- | ---: | ---: | --- |
+| TCP | 80 | 80 | ACME / HTTP redirect |
+| TCP | 443 | 443 | HTTPS, API, WebSocket |
+| TCP | 7881 | 7881 | LiveKit WebRTC TCP fallback |
+| UDP | 50000-50100 | 50000-50100 | LiveKit WebRTC media |
+
+Не открывайте наружу TCP `4000` и `7880`.
+
+## 3. Host firewall
+
+Разрешите те же входящие порты в firewall Linux-сервера. Если используете `ufw` или другую policy, не заменяйте существующие правила наугад.
+
+## 4. Установка
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh \
+  | sudo env \
+      MARMIC_REGISTRY_URL=https://hub.marmos.udav.team \
+      MARMIC_IDENTITY_URL=https://hub.marmos.udav.team \
+      sh
+```
+
+Installer получает адрес `xxxxxxxx.srv.marmic.udav.team`. DNS propagation может занимать **до 10 минут. Это нормально**.
+
+## 5. Проверка из внешней сети
+
+Проверяйте сервер через мобильный интернет или другую внешнюю сеть. Часть роутеров не поддерживает NAT loopback/hairpin NAT, поэтому публичный адрес может не работать из той же LAN, хотя извне всё исправно.
+
+## 6. Voice
+
+Для voice нужны UDP `50000-50100` и TCP `7881` fallback. Если HTTPS/text работают, а voice нет, сначала проверьте UDP port forwarding и firewall.
+
+## 7. Динамический внешний IP
+
+Registry backend уже поддерживает безопасный DDNS update через authenticated heartbeat, но continuous DDNS heartbeat agent пока не считается завершённой частью Preview.
+
+## 8. CGNAT
+
+Признаки CGNAT: WAN IP роутера отличается от публичного IP или port forwarding настроен, но входящие соединения не доходят. В таком случае запросите у провайдера публичный IPv4 или дождитесь будущего TURN/relay path.

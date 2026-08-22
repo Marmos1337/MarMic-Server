@@ -1,60 +1,156 @@
-# Установка MarMic Server — Stage 3 preview
+# Установка MarMic Server
 
-> Поддерживается: Debian/Ubuntu, Linux x86_64/amd64.
+> Текущий статус: Preview `v0.12.4-stage4a.1`.
 
-Требования:
+## 1. Требования
 
-- публичный IPv4 (IPv6 определяется дополнительно при наличии);
-- установленный Docker Engine с Compose plugin;
-- свободные [сетевые порты](ports.md);
-- права `sudo`/root;
-- доступ к `hub.marmos.udav.team`, GitHub Releases и ACME endpoints.
+Поддерживается Debian 12 и Ubuntu 24.04 на Linux `x86_64/amd64`.
 
-Bootstrap и test prerelease опубликованы, но официальный one-command запуск
-пока не включён: production Hub Registry ещё не развёрнут. Не копируйте
-неофициальные команды. В integration environment `install.sh` требует явные
-`MARMIC_REGISTRY_URL` и `MARMIC_IDENTITY_URL`, скачивает закреплённый artifact,
-проверяет SHA-256, Linux и `amd64`, после чего запускает bundled installer. Он
-не клонирует Git repository.
+Нужно:
+- root или `sudo`;
+- Docker Engine;
+- Docker Compose plugin;
+- публичный IPv4;
+- доступ к GitHub Releases, `hub.marmos.udav.team` и ACME endpoints;
+- свободные TCP `80`, `443`, `7881` и UDP `50000-50100`.
 
-Установка:
+Проверка:
 
-1. Запуск официального bootstrap installer.
-2. Проверка ОС, архитектуры, ресурсов и сетевой доступности (preflight).
-3. Регистрация MarMic Server.
-4. Получение технического адреса вида `xxxxx.srv.marmic.udav.team`.
-5. Ожидание DNS propagation.
-6. Настройка HTTPS.
-7. Получение одноразового Owner Token.
-8. Вывод одноразового Owner Token только в текущую консоль.
-9. Claim владельца через Desktop или Web MarMic.
-
-Обновление DNS после регистрации может занимать **до 10 минут**. Это ожидаемое поведение.
-
-Если ожидание истекло, registration и private server identity сохраняются в
-`/var/lib/marmic/registry`. Проверьте `sudo marmic doctor` и повторно запустите
-installer: новый server identity создаваться не должен.
-
-Данные разделены так:
-
-- `/opt/marmic` — заменяемый runtime;
-- `/etc/marmic` — пользовательская конфигурация и service secrets;
-- `/var/lib/marmic` — SQLite DB, uploads, registry identity и ACME state;
-- `/var/backups/marmic` — будущие официальные backups.
-
-Private Ed25519 key хранится только в `/var/lib/marmic/registry` с mode `0600`.
-Owner Token не записывается в обычные logs и после передачи в консоль в
-plaintext не сохраняется.
-
-Доступные команды:
-
-```text
-marmic status
-marmic doctor
-marmic logs
-marmic restart
-marmic version
-marmic owner-token regenerate
+```bash
+uname -m
+docker version
+docker compose version
 ```
 
-Regenerate разрешён только до успешного claim владельца.
+Для `uname -m` ожидается `x86_64`.
+
+## 2. Сетевые порты
+
+Разрешите в firewall:
+- TCP `80`;
+- TCP `443`;
+- TCP `7881`;
+- UDP `50000-50100`.
+
+Если VPS-провайдер использует отдельный cloud firewall/security group, откройте эти порты и там. Внутренние Docker ports `4000/tcp` и `7880/tcp` наружу публиковать не нужно.
+
+Для домашнего сервера дополнительно нужен port forwarding. См. [home-server.md](home-server.md).
+
+## 3. Установка Preview
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh \
+  | sudo env \
+      MARMIC_REGISTRY_URL=https://hub.marmos.udav.team \
+      MARMIC_IDENTITY_URL=https://hub.marmos.udav.team \
+      sh
+```
+
+Сейчас URL задаются явно только потому, что установка ещё находится в Preview. После завершения внешнего end-to-end smoke bootstrap будет переключён на официальный Hub по умолчанию.
+
+## 4. Что делает installer
+
+Installer:
+1. проверяет Linux и `amd64`;
+2. проверяет Docker Engine и Compose;
+3. скачивает официальный artifact;
+4. сверяет SHA-256;
+5. создаёт локальную Ed25519 server identity;
+6. сохраняет private key только на сервере;
+7. регистрирует сервер в MarMic Registry;
+8. получает `server_id`;
+9. регистрирует public IP;
+10. получает hostname `xxxxxxxx.srv.marmic.udav.team`;
+11. ждёт DNS active;
+12. создаёт persistent layout;
+13. загружает bundled OCI images;
+14. запускает MarMic Server, LiveKit и Caddy;
+15. запускает HTTPS/ACME flow;
+16. выводит Owner Token.
+
+## 5. DNS и HTTPS
+
+После создания DNS записи распространение может занимать **до 10 минут. Это нормально**.
+
+Installer не должен уничтожать регистрацию при timeout ожидания. Server identity и Registry state сохраняются в `/var/lib/marmic/registry`.
+
+Если DNS ещё не готов:
+
+```bash
+sudo marmic doctor
+```
+
+Caddy автоматически получает HTTPS certificate через ACME после того, как hostname указывает на сервер и TCP `80/443` доступны извне.
+
+## 6. Owner Token и claim
+
+После первой установки в консоли появляется одноразовый Owner Token. Не публикуйте его.
+
+Чтобы стать владельцем:
+1. войдите в MarMic Desktop или Web;
+2. добавьте/откройте сервер по выданному hostname;
+3. введите Owner Token в запросе activation/claim;
+4. после успешного claim текущий пользователь получает owner role и permissions.
+
+Token действует 24 часа, одноразовый, Hub хранит только hash.
+
+До claim можно выпустить новый:
+
+```bash
+sudo marmic owner-token regenerate
+```
+
+Старый token сразу инвалидируется.
+
+## 7. Проверка после установки
+
+```bash
+sudo marmic status
+sudo marmic doctor
+sudo marmic version
+```
+
+Затем проверьте HTTPS, подключение из MarMic, Owner claim, text chat и voice. Для voice лучше использовать два разных клиента/устройства.
+
+## 8. Перезапуск
+
+```bash
+sudo marmic restart
+sudo marmic status
+sudo marmic doctor
+```
+
+## 9. Повторный запуск installer
+
+Повторный запуск bootstrap допустим. Он не должен создавать новый `server_id`, заменять private key, удалять DB/uploads или очищать `/var/lib/marmic`.
+
+Если flow был прерван на DNS/HTTPS шаге, повторный запуск должен продолжить существующее состояние.
+
+## 10. Где лежат данные
+
+- `/opt/marmic` — заменяемый runtime;
+- `/etc/marmic` — конфигурация и service secrets;
+- `/var/lib/marmic` — SQLite DB, uploads, Registry identity и persistent state;
+- `/var/backups/marmic` — каталог резервных копий.
+
+Private Ed25519 key никогда не отправляется Hub.
+
+## 11. Команды
+
+```bash
+sudo marmic status
+sudo marmic doctor
+sudo marmic logs
+sudo marmic restart
+sudo marmic version
+sudo marmic owner-token regenerate
+```
+
+## 12. Что пока не входит в Preview
+
+- automatic update agent;
+- официальный `marmic backup` / `marmic restore`;
+- continuous DDNS heartbeat agent;
+- arm64;
+- TURN;
+- полностью автоматический сценарий для CGNAT.

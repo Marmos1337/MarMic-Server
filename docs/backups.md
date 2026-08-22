@@ -1,9 +1,17 @@
 # Резервное копирование
 
-> Статус: Foundation documentation.
+> Статус: официальный `marmic backup` / `marmic restore` ещё не опубликован.
 
-Владелец self-hosted сервера отвечает за актуальные резервные копии своей инфраструктуры.
+Persistent данные находятся в:
+- `/var/lib/marmic` — DB, uploads, Registry identity и state;
+- `/etc/marmic` — конфигурация и service secrets.
 
-Будущий официальный backup flow должен отдельно сохранять пользовательскую базу данных, загруженные медиа, разрешённую конфигурацию и server identity. Секреты не должны публиковаться или попадать в Git.
+`/opt/marmic` — заменяемый runtime.
 
-До публикации installer/runtime нельзя считать приведённые в сторонних материалах команды официальным backup procedure. Проверяемые команды, integrity checks, retention и restore validation будут документированы вместе с официальной системой установки.
+До появления официального backup CLI рекомендуется делать инфраструктурный snapshot/backup persistent каталогов и хранить его в защищённом месте.
+
+Особенно важно сохранять Registry identity: потеря private server identity может привести к невозможности продолжить работу с тем же `server_id`.
+
+Не публикуйте и не помещайте в Git private server keys, service secrets, `.env`, Owner Token или пользовательскую DB/uploads.
+
+Официальный backup/restore flow позже добавит integrity checks, retention и restore validation.

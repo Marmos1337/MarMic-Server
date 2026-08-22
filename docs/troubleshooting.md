@@ -1,4 +1,4 @@
-# Устранение неполадок Stage 3
+# Устранение неполадок
 
 Начните с:
 
@@ -8,41 +8,64 @@ sudo marmic doctor
 sudo marmic logs
 ```
 
-Вывод автоматически скрывает известные secrets. Перед публикацией диагностики
-всё равно проверьте её вручную.
+Диагностика скрывает известные secrets, но перед публикацией вывода всё равно проверьте его вручную.
 
-## Технический адрес ещё не открывается
+## DNS ещё не готов
 
-После регистрации обновление DNS может занимать до **10 минут**. В этот период адрес может ещё не резолвиться или открываться нестабильно.
+DNS propagation после регистрации может занимать **до 10 минут. Это нормально**. Не удаляйте `/var/lib/marmic` и не регистрируйте новый сервер только из-за ожидания DNS.
 
-Registry identity сохраняется. Не удаляйте `/var/lib/marmic`; повторный запуск
-installer продолжает существующую регистрацию.
+```bash
+sudo marmic doctor
+```
 
-## HTTPS ещё не готов
+Повторный installer должен продолжить существующую server identity.
 
-Убедитесь, что DNS указывает на текущий public IP, а TCP 80/443 доступны из
-интернета. Caddy получает certificate через ACME автоматически. Состояние
-`HTTPS pending` отличается от потери registration.
+## HTTPS не готов
 
-## Voice не подключается
+Проверьте, что hostname резолвится в ваш public IP, TCP `80/443` доступны извне и Caddy запущен. DNS active и HTTPS ready — разные этапы.
 
-Проверьте TCP 7881 и UDP 50000-50100 на host firewall и router. Не открывайте
-внутренние 4000/7880. TURN пока отсутствует.
+## Text работает, voice нет
 
-## Owner Token
+Проверьте UDP `50000-50100`, TCP `7881`, cloud firewall, host firewall и port forwarding. TCP `4000/7880` наружу открывать не нужно. TURN пока отсутствует.
 
-Token действует 24 часа, одноразовый и после claim непригоден. До claim новый
-token можно получить командой `sudo marmic owner-token regenerate`; старый
-сразу инвалидируется. После claim regeneration запрещён.
+## Owner Token не принимается
 
-## Installer или runtime недоступен
+Token действует 24 часа и одноразовый. До claim выпустите новый:
 
-Используйте только bootstrap из этого repository и artifact из официального
-GitHub Release. Bootstrap прекращает установку при несовпадении SHA-256.
+```bash
+sudo marmic owner-token regenerate
+```
 
-## Безопасность
+После regeneration предыдущий token недействителен. После claim regeneration запрещён.
 
-Не публикуйте credentials, Owner Token, private key, authentication tokens или содержимое локальной базы. Для сообщения об уязвимости используйте порядок из [Security Policy](../SECURITY.md).
+## Docker container unhealthy
 
-Полноценные `backup`, `restore`, `update`, arm64 и TURN появятся на следующем
-этапе.
+```bash
+sudo marmic status
+sudo marmic logs
+sudo marmic doctor
+```
+
+Не используйте `docker system prune` как способ ремонта: он может затронуть другие Docker-проекты на том же хосте.
+
+## Artifact не устанавливается
+
+Используйте только официальный `install.sh`. Bootstrap проверяет release artifact, SHA-256, безопасные пути tar, Linux, `x86_64/amd64` и Docker Compose.
+
+## Домашний сервер не доступен из интернета
+
+Проверьте port forwarding, firewall, реальный WAN IP и отсутствие CGNAT.
+
+## Из интернета работает, а из LAN — нет
+
+Возможная причина — отсутствие NAT loopback/hairpin NAT на роутере. Проверьте адрес через мобильный интернет.
+
+## Что прислать при диагностике
+
+```bash
+sudo marmic status
+sudo marmic doctor
+sudo marmic version
+```
+
+Не публикуйте Owner Token, private keys, account tokens, passwords, `.env` или пользовательские данные. Для security issue используйте [Security Policy](../SECURITY.md).

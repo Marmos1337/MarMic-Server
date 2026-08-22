@@ -1,9 +1,11 @@
 # Обновление MarMic Server
 
-> Статус: Planned.
+> Статус: официальный automatic update agent ещё не включён в Preview.
 
-Официальный update agent ещё не опубликован.
+Не обновляйте MarMic Server заменой случайных Docker images или сторонних artifacts.
 
-Планируемый безопасный flow обновления включает проверку manifest и официального artifact, backup, migration preflight при необходимости, health check и rollback при критической ошибке.
+Планируемый официальный update path: официальный release manifest → проверка совместимости и подписи/хэша → backup при необходимости → migration preflight → update → health check → rollback при критической ошибке.
 
-Patch/security updates могут быть обязательными в соответствии с [MarMic Server Community License](../LICENSE.md). Крупные migration-sensitive обновления могут требовать отдельного подтверждения владельца.
+Patch/security compatibility updates могут быть обязательными в соответствии с [MarMic Server Community License](../LICENSE.md). Крупные migration-sensitive обновления могут требовать подтверждения владельца.
+
+Пока официальный `marmic update` не опубликован, используйте только явно документированные Preview/release инструкции.
