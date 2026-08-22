@@ -78,7 +78,8 @@ docker compose version >/dev/null
 manifest="$WORK_DIR/$PAYLOAD/manifest.json"
 export MARMIC_SERVER_VERSION="$VERSION"
 export MARMIC_SERVER_IMAGE="$("$WORK_DIR/$PAYLOAD/runtime/node" -p "require(process.argv[1]).serverImage" "$manifest")"
-export MARMIC_REGISTRY_URL="${MARMIC_REGISTRY_URL:-https://hub.marmos.udav.team}"
-export MARMIC_IDENTITY_URL="${MARMIC_IDENTITY_URL:-https://hub.marmos.udav.team}"
+: "${MARMIC_REGISTRY_URL:?Stage 3 preview requires an explicit Registry URL until the Hub rollout}"
+: "${MARMIC_IDENTITY_URL:?Stage 3 preview requires an explicit Identity URL until the Hub rollout}"
+export MARMIC_REGISTRY_URL MARMIC_IDENTITY_URL
 
 "$WORK_DIR/$PAYLOAD/runtime/node" "$WORK_DIR/$PAYLOAD/bin/install.mjs"

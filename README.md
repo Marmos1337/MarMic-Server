@@ -15,17 +15,18 @@ MarMic Server — self-hosted сервер для MarMic, работающий �
 
 ## Stage 3 preview: первая установка
 
-Первая проверенная distribution доступна для Debian/Ubuntu на `x86_64/amd64`.
-Нужны установленный Docker Engine и Docker Compose plugin. Для тестового
-self-hosted сервера:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh | sudo sh
-```
+Первая проверенная distribution доступна как test prerelease для Debian/Ubuntu
+на `x86_64/amd64`. Нужны установленный Docker Engine и Docker Compose plugin.
 
 Bootstrap проверяет SHA-256 официального artifact и запускает proprietary
 runtime installer. Репозиторий и development workspace пользователю не
 передаются.
+
+Публичная one-command установка пока намеренно не включена: production Hub ещё
+не получил Registry Stage 1/2. `install.sh` опубликован для обозримости и
+integration environments, но до Hub rollout требует явные
+`MARMIC_REGISTRY_URL` и `MARMIC_IDENTITY_URL`. Команда `curl | sudo sh` появится
+здесь только после реальной внешней проверки полного production path.
 
 Фактический flow:
 

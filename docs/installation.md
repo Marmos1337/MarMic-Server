@@ -10,14 +10,12 @@
 - права `sudo`/root;
 - доступ к `hub.marmos.udav.team`, GitHub Releases и ACME endpoints.
 
-Запуск:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh | sudo sh
-```
-
-Bootstrap скачивает закреплённый artifact, проверяет SHA-256, проверяет Linux и
-`amd64`, после чего запускает bundled installer. Он не клонирует Git repository.
+Bootstrap и test prerelease опубликованы, но официальный one-command запуск
+пока не включён: production Hub Registry ещё не развёрнут. Не копируйте
+неофициальные команды. В integration environment `install.sh` требует явные
+`MARMIC_REGISTRY_URL` и `MARMIC_IDENTITY_URL`, скачивает закреплённый artifact,
+проверяет SHA-256, Linux и `amd64`, после чего запускает bundled installer. Он
+не клонирует Git repository.
 
 Установка:
 
