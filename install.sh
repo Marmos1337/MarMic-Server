@@ -1,18 +1,29 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.13.4"
+VERSION="0.13.5"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="de0ebdc1863eca747c835d07fbfb0f652fd60339ea222c102271b15ff08a3457"
+PINNED_SHA256="8a1c8d2ef47daef99aed971eac98cd94b4cb5d7bc4919aa93677620e90b15c9a"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
-WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/marmic-bootstrap.XXXXXX")"
+STAGING_ROOT="${MARMIC_BOOTSTRAP_STAGING_ROOT:-/var/tmp}"
+REQUIRED_STAGING_BYTES=1073741824
+WORK_DIR=""
 
-trap 'status=$?; trap - EXIT HUP INT TERM; rm -rf "$WORK_DIR"; exit "$status"' EXIT
-trap 'exit 129' HUP
-trap 'exit 130' INT
-trap 'exit 143' TERM
+cleanup() {
+  status="$1"
+  trap - EXIT HUP INT TERM
+  case "$WORK_DIR" in
+    "$STAGING_ROOT"/marmic-bootstrap.*) rm -rf "$WORK_DIR" ;;
+  esac
+  exit "$status"
+}
 
-for tool in curl tar awk mv; do
+trap 'cleanup $?' EXIT
+trap 'cleanup 129' HUP
+trap 'cleanup 130' INT
+trap 'cleanup 143' TERM
+
+for tool in curl tar awk mv df mkdir mktemp rm cat; do
   command -v "$tool" >/dev/null 2>&1 || {
     echo "Не найден обязательный инструмент: $tool" >&2
     exit 1
@@ -40,6 +51,48 @@ preflight() {
     echo "Docker Compose plugin недоступен. Установите его и повторите команду." >&2
     return 1
   fi
+}
+
+check_staging_space() {
+  operation="$1"
+  if ! available_kib="$(df -Pk "$WORK_DIR" | awk 'NR == 2 { print $4 }')"; then
+    echo "Не удалось проверить свободное место для staging: $WORK_DIR" >&2
+    return 1
+  fi
+  case "$available_kib" in
+    ''|*[!0-9]*)
+      echo "Не удалось определить свободное место для staging: $WORK_DIR" >&2
+      return 1
+      ;;
+  esac
+  available_bytes=$((available_kib * 1024))
+  if [ "$available_bytes" -lt "$REQUIRED_STAGING_BYTES" ]; then
+    required_mib=$((REQUIRED_STAGING_BYTES / 1024 / 1024))
+    available_mib=$((available_bytes / 1024 / 1024))
+    echo "Недостаточно места для ${operation} MarMic Server на $STAGING_ROOT: требуется не менее ${required_mib} MiB (${REQUIRED_STAGING_BYTES} bytes), доступно ${available_mib} MiB (${available_bytes} bytes)." >&2
+    return 1
+  fi
+}
+
+prepare_staging() {
+  [ -n "$STAGING_ROOT" ] || {
+    echo "Не задан каталог staging для MarMic Server." >&2
+    return 1
+  }
+  case "$STAGING_ROOT" in
+    /) ;;
+    */) STAGING_ROOT="${STAGING_ROOT%/}" ;;
+  esac
+  if ! mkdir -p "$STAGING_ROOT"; then
+    echo "Не удалось создать staging-каталог: $STAGING_ROOT" >&2
+    return 1
+  fi
+  if ! WORK_DIR="$(mktemp -d "$STAGING_ROOT/marmic-bootstrap.XXXXXX")"; then
+    echo "Не удалось создать рабочий каталог в $STAGING_ROOT" >&2
+    return 1
+  fi
+  check_staging_space "загрузки и распаковки"
+  echo "MarMic Server: staging $WORK_DIR, доступно $((available_bytes / 1024 / 1024)) MiB."
 }
 
 download_file() {
@@ -80,6 +133,8 @@ if [ "${MARMIC_BOOTSTRAP_VERIFY_ONLY:-0}" != "1" ]; then
   preflight
   echo "MarMic Server: preflight пройден."
 fi
+echo "MarMic Server: готовим disk-backed staging…"
+prepare_staging
 download_file "$BASE_URL/$ARTIFACT" "$WORK_DIR/$ARTIFACT" "runtime artifact"
 download_file "$BASE_URL/$ARTIFACT.sha256" "$WORK_DIR/$ARTIFACT.sha256" "SHA-256 manifest"
 
@@ -116,11 +171,13 @@ else
   exit 1
 fi
 echo "MarMic Server: распаковываем runtime…"
+check_staging_space "распаковки"
 if ! tar -xzf "$WORK_DIR/$ARTIFACT" -C "$WORK_DIR" 2>"$WORK_DIR/tar.log"; then
   echo "Не удалось распаковать MarMic Server runtime." >&2
   cat "$WORK_DIR/tar.log" >&2
   exit 1
 fi
+rm -f "$WORK_DIR/$ARTIFACT"
 echo "MarMic Server: artifact проверен и подготовлен."
 if [ "${MARMIC_INSTALL_VERBOSE:-0}" = "1" ] && [ -s "$WORK_DIR/tar.log" ]; then
   cat "$WORK_DIR/tar.log" >&2
