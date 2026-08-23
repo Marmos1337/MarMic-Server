@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.13.0"
+VERSION="0.13.3"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="763b949c74e3710f180631db51ed3739f508415ff9a9c20a08a31bfac94e84c8"
+PINNED_SHA256="b842782e29630ff924b4fcc81d0c369d1a55f7a2bf3aaf1b90bffcc04d63f5c9"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/marmic-bootstrap.XXXXXX")"
 
