@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.12.7"
+VERSION="0.13.0"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="caa0b313432b4d5782bc5177629ca1242ffae69977b9a7a37cf39d503673278c"
+PINNED_SHA256="763b949c74e3710f180631db51ed3739f508415ff9a9c20a08a31bfac94e84c8"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/marmic-bootstrap.XXXXXX")"
 
@@ -68,12 +68,12 @@ fi
   exit 1
 }
 [ "$(uname -s)" = "Linux" ] || {
-  echo "Stage 3 поддерживает только Linux." >&2
+  echo "MarMic Server поддерживает только Linux." >&2
   exit 1
 }
 case "$(uname -m)" in
   x86_64|amd64) ;;
-  *) echo "Stage 3 поддерживает только x86_64/amd64." >&2; exit 1 ;;
+  *) echo "MarMic Server поддерживает только x86_64/amd64." >&2; exit 1 ;;
 esac
 command -v docker >/dev/null 2>&1 || {
   echo "Docker Engine с Compose plugin должен быть установлен заранее." >&2

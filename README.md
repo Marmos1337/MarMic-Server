@@ -10,7 +10,7 @@ MarMic Server является проприетарным ПО. Публичны
 
 ## Быстрый старт
 
-Текущий стабильный release: `v0.12.7`, Linux `x86_64/amd64`.
+Текущий стабильный release: `v0.13.0`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -105,10 +105,9 @@ TCP `4000` и `7880` наружу открывать не нужно.
 
 ## Текущий статус
 
-Production MarMic Hub Registry и Beget DNS provisioning развёрнуты и проверены. Artifact `v0.12.7` прошёл воспроизводимую сборку, extracted-install и полный Compose smoke: MarMic Server + LiveKit + Caddy; server identity сохраняется после recreate.
+Production MarMic Hub Registry и Beget DNS provisioning развёрнуты и проверены. Artifact `v0.13.0` прошёл воспроизводимую сборку, extracted-install, полный Compose smoke и upgrade/rollback smoke с сохранением Registry identity, owner state и данных.
 
-Внешний VPS flow, ACME/HTTPS, Owner Claim и подключение второго аккаунта проверены. В следующих версиях остаются:
-- официальный update agent;
+Внешний VPS flow, ACME/HTTPS, Owner Claim и подключение второго аккаунта проверены. В `0.13.0` добавлен официальный update agent с backup, health-check и rollback. В следующих версиях остаются:
 - официальный backup/restore CLI;
 - arm64;
 - TURN.

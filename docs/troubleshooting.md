@@ -52,6 +52,10 @@ sudo marmic doctor
 
 Используйте только официальный `install.sh`. Bootstrap проверяет release artifact, SHA-256, безопасные пути tar, Linux, `x86_64/amd64` и Docker Compose.
 
+## Обновление не завершилось
+
+Проверьте `sudo marmic doctor` и `sudo marmic logs`. Update agent сохраняет предыдущий known-good runtime и автоматически выполняет rollback при неуспешном health check. Не удаляйте update journal, backup или `/var/lib/marmic` до диагностики.
+
 ## Домашний сервер не доступен из интернета
 
 Проверьте port forwarding, firewall, реальный WAN IP и отсутствие CGNAT.

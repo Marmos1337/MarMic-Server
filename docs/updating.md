@@ -1,11 +1,22 @@
 # Обновление MarMic Server
 
-> Статус: официальный automatic update agent ещё не включён в текущий release.
+MarMic Server `0.13.0` включает официальный update agent. Он получает stable manifest, проверяет SHA-256 artifact, создаёт backup, подготавливает новый runtime, переключает Compose только после подготовки и автоматически возвращает предыдущий known-good runtime при неуспешном health check.
 
-Не обновляйте MarMic Server заменой случайных Docker images или сторонних artifacts.
+Проверить и установить доступное обновление вручную:
 
-Планируемый официальный update path: официальный release manifest → проверка совместимости и подписи/хэша → backup при необходимости → migration preflight → update → health check → rollback при критической ошибке.
+```bash
+sudo marmic update
+```
+
+Автоматическая проверка выполняется установленным scheduler. Статус и результат последнего обновления доступны через:
+
+```bash
+sudo marmic status
+sudo marmic doctor
+```
+
+Не заменяйте Docker images вручную и не удаляйте `/var/lib/marmic`: там находятся Registry identity, private key, DB, uploads и owner state.
+
+Для серверов, установленных из старого `0.12.7`, первый переход на `0.13.0` выполняется повторным запуском официального bootstrap installer. Он сохраняет `/var/lib/marmic` и устанавливает update agent; последующие compatible обновления обнаруживаются scheduler автоматически.
 
 Patch/security compatibility updates могут быть обязательными в соответствии с [MarMic Server Community License](../LICENSE.md). Крупные migration-sensitive обновления могут требовать подтверждения владельца.
-
-Пока официальный `marmic update` не опубликован, используйте только явно документированные release-инструкции.
