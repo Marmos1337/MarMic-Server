@@ -52,6 +52,11 @@ sudo marmic doctor
 
 Используйте только официальный `install.sh`. Bootstrap проверяет release artifact, SHA-256, безопасные пути tar, Linux, `x86_64/amd64` и Docker Compose.
 
+Canonical one-command installer сначала полностью скачивает `install.sh` во
+временный файл. Если download оборвался, команда завершится с ошибкой и runtime
+не будет активирован. Повторите ту же официальную команду: незавершённый
+временный файл не переиспользуется, а persistent `/var/lib/marmic` сохраняется.
+
 ## Обновление не завершилось
 
 Проверьте `sudo marmic doctor` и `sudo marmic logs`. Update agent сохраняет предыдущий known-good runtime и автоматически выполняет rollback при неуспешном health check. Не удаляйте update journal, backup или `/var/lib/marmic` до диагностики.
