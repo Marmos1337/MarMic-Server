@@ -111,7 +111,13 @@ TCP `4000` и `7880` наружу открывать не нужно.
 
 Production MarMic Hub Registry и Beget DNS provisioning развёрнуты и проверены. Artifact `v0.13.5` собран воспроизводимо из закреплённого source commit, прошёл проверку состава, checksum, безопасных путей и non-smoke installer/update gates. Bootstrap использует disk-backed staging в `/var/tmp`, заранее проверяет свободное место и не распаковывает большой runtime в RAM-backed `/tmp`; smoke 0.13.5 пропущен по release policy.
 
-Внешний VPS flow, ACME/HTTPS, Owner Claim и подключение второго аккаунта проверены. В `0.13.0` добавлен официальный update agent с backup, health-check и rollback. В следующих версиях остаются:
+Исторический disposable-VPS flow, ACME/HTTPS, Owner Claim и подключение второго
+аккаунта ранее были проверены и используются только как regression context.
+Того VPS больше нет; production не используется вместо destructive test host.
+Новые uninstall/purge и другие разрушительные проверки требуют отдельной
+isolated Linux VM или специально созданного disposable host. В `0.13.0`
+добавлен официальный update agent с backup, health-check и rollback. В следующих
+версиях остаются:
 - официальный backup/restore CLI;
 - arm64;
 - TURN.
