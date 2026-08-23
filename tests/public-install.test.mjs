@@ -90,12 +90,52 @@ test('interrupted bootstrap download is visible, non-zero, and never executes', 
 
 test('bootstrap itself uses bounded retries and atomic partial downloads', () => {
   const bootstrap = read('install.sh');
+  assert.match(bootstrap, /VERSION="0\.13\.4"/u);
   assert.match(bootstrap, /--retry 4/u);
   assert.match(bootstrap, /--retry-all-errors/u);
   assert.match(bootstrap, /--connect-timeout 15/u);
   assert.match(bootstrap, /--max-time 1200/u);
   assert.match(bootstrap, /destination\.part/u);
   assert.match(bootstrap, /mv "\$partial" "\$destination"/u);
+});
+
+test('clean install fails visibly before download when Docker Compose is unavailable', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'marmic-bootstrap-preflight-'));
+  const bin = join(directory, 'bin');
+  const curlMarker = join(directory, 'curl-called');
+  spawnSync('mkdir', ['-p', bin], { stdio: 'inherit' });
+  writeExecutable(join(bin, 'id'), '#!/bin/sh\nprintf 0\n');
+  writeExecutable(join(bin, 'uname'), `#!/bin/sh
+if [ "${'$'}{1:-}" = '-s' ]; then printf Linux; else printf x86_64; fi
+`);
+  writeExecutable(join(bin, 'docker'), '#!/bin/sh\nexit 1\n');
+  writeExecutable(
+    join(bin, 'curl'),
+    `#!/bin/sh
+printf called > "$TEST_CURL_MARKER"
+exit 1
+`,
+  );
+  const result = spawnSync('sh', [new URL('install.sh', root).pathname], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+      TEST_CURL_MARKER: curlMarker,
+    },
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Docker Compose plugin недоступен/u);
+  assert.equal(spawnSync('test', ['!', '-e', curlMarker]).status, 0);
+});
+
+test('post-checksum archive and runtime failures are explicit', () => {
+  const bootstrap = read('install.sh');
+  assert.match(bootstrap, /tar -tzf "\$WORK_DIR\/\$ARTIFACT" >"\$ARCHIVE_LIST"/u);
+  assert.doesNotMatch(bootstrap, /tar -tzf[^\n]+\|\s*awk/u);
+  assert.match(bootstrap, /Не удалось прочитать структуру artifact/u);
+  assert.match(bootstrap, /Не удалось распаковать MarMic Server runtime/u);
+  assert.match(bootstrap, /Установка MarMic Server завершилась с ошибкой/u);
 });
 
 test('bootstrap never activates a partially downloaded runtime artifact', () => {
@@ -120,6 +160,7 @@ exit 18
       ...process.env,
       PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
       MARMIC_DISTRIBUTION_BASE_URL: 'https://updates.invalid',
+      MARMIC_BOOTSTRAP_VERIFY_ONLY: '1',
     },
   });
   assert.notEqual(result.status, 0);

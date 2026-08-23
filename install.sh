@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.13.3"
+VERSION="0.13.4"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="b842782e29630ff924b4fcc81d0c369d1a55f7a2bf3aaf1b90bffcc04d63f5c9"
+PINNED_SHA256="de0ebdc1863eca747c835d07fbfb0f652fd60339ea222c102271b15ff08a3457"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/marmic-bootstrap.XXXXXX")"
 
@@ -18,6 +18,29 @@ for tool in curl tar awk mv; do
     exit 1
   }
 done
+
+preflight() {
+  [ "$(id -u)" -eq 0 ] || {
+    echo "Запустите installer через sudo." >&2
+    return 1
+  }
+  [ "$(uname -s)" = "Linux" ] || {
+    echo "MarMic Server поддерживает только Linux." >&2
+    return 1
+  }
+  case "$(uname -m)" in
+    x86_64|amd64) ;;
+    *) echo "MarMic Server поддерживает только x86_64/amd64." >&2; return 1 ;;
+  esac
+  command -v docker >/dev/null 2>&1 || {
+    echo "Docker Engine с Compose plugin должен быть установлен заранее." >&2
+    return 1
+  }
+  if ! docker compose version >/dev/null 2>&1; then
+    echo "Docker Compose plugin недоступен. Установите его и повторите команду." >&2
+    return 1
+  fi
+}
 
 download_file() {
   url="$1"
@@ -52,6 +75,11 @@ download_file() {
 }
 
 echo "MarMic Server $VERSION: начинаем безопасную установку."
+if [ "${MARMIC_BOOTSTRAP_VERIFY_ONLY:-0}" != "1" ]; then
+  echo "MarMic Server: проверяем Linux, архитектуру и Docker…"
+  preflight
+  echo "MarMic Server: preflight пройден."
+fi
 download_file "$BASE_URL/$ARTIFACT" "$WORK_DIR/$ARTIFACT" "runtime artifact"
 download_file "$BASE_URL/$ARTIFACT.sha256" "$WORK_DIR/$ARTIFACT.sha256" "SHA-256 manifest"
 
@@ -72,16 +100,24 @@ fi
 echo "MarMic Server: SHA-256 подтверждён."
 
 PAYLOAD="marmic-server-${VERSION}-linux-amd64"
-if tar -tzf "$WORK_DIR/$ARTIFACT" | awk -v root="$PAYLOAD/" '
+ARCHIVE_LIST="$WORK_DIR/archive.list"
+echo "MarMic Server: проверяем структуру artifact…"
+if ! tar -tzf "$WORK_DIR/$ARTIFACT" >"$ARCHIVE_LIST"; then
+  echo "Не удалось прочитать структуру artifact." >&2
+  exit 1
+fi
+if awk -v root="$PAYLOAD/" '
   /^\// || /(^|\/)\.\.($|\/)/ || index($0, root) != 1 { bad = 1 }
   END { exit bad }
-'; then
+' "$ARCHIVE_LIST"; then
   :
 else
   echo "Artifact содержит небезопасные пути." >&2
   exit 1
 fi
+echo "MarMic Server: распаковываем runtime…"
 if ! tar -xzf "$WORK_DIR/$ARTIFACT" -C "$WORK_DIR" 2>"$WORK_DIR/tar.log"; then
+  echo "Не удалось распаковать MarMic Server runtime." >&2
   cat "$WORK_DIR/tar.log" >&2
   exit 1
 fi
@@ -98,29 +134,21 @@ if [ "${MARMIC_BOOTSTRAP_VERIFY_ONLY:-0}" = "1" ]; then
   exit 0
 fi
 
-[ "$(id -u)" -eq 0 ] || {
-  echo "Запустите installer через sudo." >&2
-  exit 1
-}
-[ "$(uname -s)" = "Linux" ] || {
-  echo "MarMic Server поддерживает только Linux." >&2
-  exit 1
-}
-case "$(uname -m)" in
-  x86_64|amd64) ;;
-  *) echo "MarMic Server поддерживает только x86_64/amd64." >&2; exit 1 ;;
-esac
-command -v docker >/dev/null 2>&1 || {
-  echo "Docker Engine с Compose plugin должен быть установлен заранее." >&2
-  exit 1
-}
-docker compose version >/dev/null
-
 manifest="$WORK_DIR/$PAYLOAD/manifest.json"
 export MARMIC_SERVER_VERSION="$VERSION"
-export MARMIC_SERVER_IMAGE="$("$WORK_DIR/$PAYLOAD/runtime/node" -p "require(process.argv[1]).serverImage" "$manifest")"
+if ! MARMIC_SERVER_IMAGE="$("$WORK_DIR/$PAYLOAD/runtime/node" -p "require(process.argv[1]).serverImage" "$manifest")"; then
+  echo "Не удалось прочитать manifest MarMic Server runtime." >&2
+  exit 1
+fi
+export MARMIC_SERVER_IMAGE
 MARMIC_REGISTRY_URL="${MARMIC_REGISTRY_URL:-https://hub.marmos.udav.team}"
 MARMIC_IDENTITY_URL="${MARMIC_IDENTITY_URL:-https://hub.marmos.udav.team}"
 export MARMIC_REGISTRY_URL MARMIC_IDENTITY_URL
 
-"$WORK_DIR/$PAYLOAD/runtime/node" "$WORK_DIR/$PAYLOAD/bin/install.mjs"
+echo "MarMic Server: запускаем установку runtime…"
+"$WORK_DIR/$PAYLOAD/runtime/node" "$WORK_DIR/$PAYLOAD/bin/install.mjs" || {
+  status=$?
+  echo "Установка MarMic Server завершилась с ошибкой (код $status). Повторный запуск этой же команды безопасен." >&2
+  exit "$status"
+}
+echo "MarMic Server $VERSION: установка завершена."
