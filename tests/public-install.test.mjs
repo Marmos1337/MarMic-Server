@@ -94,7 +94,7 @@ test('interrupted bootstrap download is visible, non-zero, and never executes', 
 
 test('bootstrap itself uses bounded retries and atomic partial downloads', () => {
   const source = bootstrap();
-  assert.match(source, /VERSION="0\.13\.6"/u);
+  assert.match(source, /VERSION="0\.14\.0"/u);
   assert.match(source, /--retry 4/u);
   assert.match(source, /--retry-all-errors/u);
   assert.match(source, /--connect-timeout 15/u);
@@ -251,7 +251,7 @@ while [ "$#" -gt 0 ]; do
   if [ "$1" = '--output' ]; then output="$2"; shift 2; else shift; fi
 done
 case "$output" in
-  *.sha256.part) printf '${sha}  marmic-server-0.13.6-linux-amd64.tar.gz\n' > "$output" ;;
+  *.sha256.part) printf '${sha}  marmic-server-0.14.0-linux-amd64.tar.gz\n' > "$output" ;;
   *) printf artifact > "$output" ;;
 esac
 `,
@@ -266,8 +266,8 @@ printf '${sha}  %s\n' "$1"
     join(bin, 'tar'),
     `#!/bin/sh
 if [ "$1" = '-tzf' ]; then
-  printf 'marmic-server-0.13.6-linux-amd64/\n'
-  printf 'marmic-server-0.13.6-linux-amd64/manifest.json\n'
+  printf 'marmic-server-0.14.0-linux-amd64/\n'
+  printf 'marmic-server-0.14.0-linux-amd64/manifest.json\n'
   exit 0
 fi
 if [ "$FAKE_TAR_MODE" = 'term' ]; then
@@ -282,8 +282,8 @@ destination=''
 while [ "$#" -gt 0 ]; do
   if [ "$1" = '-C' ]; then destination="$2"; shift 2; else shift; fi
 done
-mkdir -p "$destination/marmic-server-0.13.6-linux-amd64"
-printf '{"version":"0.13.6","architecture":"amd64","sourceCommit":"test"}\n' > "$destination/marmic-server-0.13.6-linux-amd64/manifest.json"
+mkdir -p "$destination/marmic-server-0.14.0-linux-amd64"
+printf '{"version":"0.14.0","architecture":"amd64","sourceCommit":"test"}\n' > "$destination/marmic-server-0.14.0-linux-amd64/manifest.json"
 `,
   );
   writeExecutable(
