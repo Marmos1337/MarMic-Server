@@ -10,7 +10,7 @@ MarMic Server является проприетарным ПО. Публичны
 
 ## Быстрый старт
 
-Текущий стабильный release: `v0.13.5`, Linux `x86_64/amd64`.
+Текущий стабильный release: `v0.13.6`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -109,7 +109,7 @@ TCP `4000` и `7880` наружу открывать не нужно.
 
 ## Текущий статус
 
-Production MarMic Hub Registry и Beget DNS provisioning развёрнуты и проверены. Artifact `v0.13.5` собран воспроизводимо из закреплённого source commit, прошёл проверку состава, checksum, безопасных путей и non-smoke installer/update gates. Bootstrap использует disk-backed staging в `/var/tmp`, заранее проверяет свободное место и не распаковывает большой runtime в RAM-backed `/tmp`; smoke 0.13.5 пропущен по release policy.
+Production MarMic Hub Registry и Beget DNS provisioning развёрнуты и проверены. Artifact `v0.13.6` собран воспроизводимо из закреплённого source commit, прошёл проверку состава, checksum, безопасных путей и targeted installer/update gates. В `0.13.6` сервер получил persistent upload endpoint для иконки сервера с проверкой права `MANAGE_SERVER`. Bootstrap использует disk-backed staging в `/var/tmp`, заранее проверяет свободное место и не распаковывает большой runtime в RAM-backed `/tmp`; smoke 0.13.6 пропущен по release policy.
 
 Исторический disposable-VPS flow, ACME/HTTPS, Owner Claim и подключение второго
 аккаунта ранее были проверены и используются только как regression context.
