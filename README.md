@@ -1,5 +1,7 @@
 # MarMic Server
 
+Официальный сайт MarMic: [https://marmic.udav.team/](https://marmic.udav.team/)
+
 MarMic Server — self-hosted сервер для MarMic. Он запускается на вашей Linux-машине, а пользователи подключаются к нему через MarMic Desktop или Web.
 
 Подходящие сценарии:
