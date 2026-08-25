@@ -19,4 +19,16 @@
 
 ## TURN
 
-Отдельные TURN ports сейчас отсутствуют: TURN пока не входит в текущий release.
+В опубликованном `v0.15.0` отдельные TURN ports отсутствуют. Не открывайте их,
+пока установленный artifact не сообщает поддержку TURN.
+
+Для следующего runtime подготовлены:
+
+| Протокол | Порт | Назначение |
+| --- | ---: | --- |
+| UDP | 3478 | встроенный authenticated TURN listener |
+| UDP | 50101-50200 | bounded TURN relay allocations |
+
+TURN/TLS `443/tcp` не добавляется в обычный single-node Compose: этот порт уже
+принадлежит Caddy. Вариант TURN/TLS требует L4 SNI edge или отдельного public IP
+и описан в [turn.md](turn.md).

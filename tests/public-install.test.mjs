@@ -14,11 +14,13 @@ import test from 'node:test';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), 'utf8');
 const bootstrap = () => read('install.sh');
+const releaseVersion = () =>
+  /VERSION="([^"]+)"/u.exec(bootstrap())?.[1] ?? '';
 const pinnedSha = () =>
   /PINNED_SHA256="([^"]+)"/u.exec(bootstrap())?.[1] ?? '';
 
 function canonicalCommand(markdown) {
-  const match = /```bash\n(sh -c '[^\n]+')\n```/u.exec(markdown);
+  const match = /```bash\r?\n(sh -c '[^\r\n]+')\r?\n```/u.exec(markdown);
   assert.ok(match, 'canonical one-command installer is missing');
   return match[1];
 }
@@ -94,7 +96,7 @@ test('interrupted bootstrap download is visible, non-zero, and never executes', 
 
 test('bootstrap itself uses bounded retries and atomic partial downloads', () => {
   const source = bootstrap();
-  assert.match(source, /VERSION="0\.14\.0"/u);
+  assert.match(releaseVersion(), /^\d+\.\d+\.\d+$/u);
   assert.match(source, /--retry 4/u);
   assert.match(source, /--retry-all-errors/u);
   assert.match(source, /--connect-timeout 15/u);
@@ -241,6 +243,8 @@ function runExtraction(mode) {
   const stagingRoot = join(directory, 'staging');
   const nodeMarker = join(directory, 'node-checked');
   const sha = pinnedSha();
+  const version = releaseVersion();
+  const payload = `marmic-server-${version}-linux-amd64`;
   assert.match(sha, /^[a-f0-9]{64}$/u);
   spawnSync('mkdir', ['-p', bin, stagingRoot], { stdio: 'inherit' });
   writeExecutable(
@@ -251,7 +255,7 @@ while [ "$#" -gt 0 ]; do
   if [ "$1" = '--output' ]; then output="$2"; shift 2; else shift; fi
 done
 case "$output" in
-  *.sha256.part) printf '${sha}  marmic-server-0.14.0-linux-amd64.tar.gz\n' > "$output" ;;
+  *.sha256.part) printf '${sha}  ${payload}.tar.gz\n' > "$output" ;;
   *) printf artifact > "$output" ;;
 esac
 `,
@@ -266,8 +270,8 @@ printf '${sha}  %s\n' "$1"
     join(bin, 'tar'),
     `#!/bin/sh
 if [ "$1" = '-tzf' ]; then
-  printf 'marmic-server-0.14.0-linux-amd64/\n'
-  printf 'marmic-server-0.14.0-linux-amd64/manifest.json\n'
+  printf '${payload}/\n'
+  printf '${payload}/manifest.json\n'
   exit 0
 fi
 if [ "$FAKE_TAR_MODE" = 'term' ]; then
@@ -282,8 +286,8 @@ destination=''
 while [ "$#" -gt 0 ]; do
   if [ "$1" = '-C' ]; then destination="$2"; shift 2; else shift; fi
 done
-mkdir -p "$destination/marmic-server-0.14.0-linux-amd64"
-printf '{"version":"0.14.0","architecture":"amd64","sourceCommit":"test"}\n' > "$destination/marmic-server-0.14.0-linux-amd64/manifest.json"
+mkdir -p "$destination/${payload}"
+printf '{"version":"${version}","architecture":"amd64","sourceCommit":"test"}\n' > "$destination/${payload}/manifest.json"
 `,
   );
   writeExecutable(

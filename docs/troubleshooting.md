@@ -26,7 +26,7 @@ sudo marmic doctor
 
 ## Text работает, voice нет
 
-Проверьте UDP `50000-50100`, TCP `7881`, cloud firewall, host firewall и port forwarding. TCP `4000/7880` наружу открывать не нужно. TURN пока отсутствует.
+На опубликованном `v0.15.0` проверьте UDP `50000-50100`, TCP `7881`, cloud firewall, host firewall и port forwarding. TCP `4000/7880` наружу открывать не нужно. TURN-порты этого release отсутствуют; подготовленная следующая схема приведена в [turn.md](turn.md).
 
 ## Owner Token не принимается
 
@@ -59,7 +59,7 @@ Canonical one-command installer сначала полностью скачива
 
 ## Обновление не завершилось
 
-Проверьте `sudo marmic doctor` и `sudo marmic logs`. Update agent сохраняет предыдущий known-good runtime и автоматически выполняет rollback при неуспешном health check. Не удаляйте update journal, backup или `/var/lib/marmic` до диагностики.
+Проверьте `sudo marmic update status`, `systemctl status marmic-update.timer`, `sudo marmic doctor` и `sudo marmic logs`. Update agent сохраняет предыдущий known-good runtime и автоматически выполняет rollback при неуспешном health check. Не удаляйте update journal, backup или `/var/lib/marmic` до диагностики.
 
 ## Домашний сервер не доступен из интернета
 

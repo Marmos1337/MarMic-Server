@@ -35,6 +35,10 @@ docker compose version
 - TCP `7881`;
 - UDP `50000-50100`.
 
+Это набор портов опубликованного `v0.15.0`. Подготовленная TURN-схема для
+следующего server artifact описана отдельно и не должна применяться к
+`v0.15.0`: [TURN и relay](docs/turn.md).
+
 Подробнее: [сетевые порты](docs/ports.md).
 
 ### Установка
@@ -83,13 +87,17 @@ sudo marmic doctor
 sudo marmic version
 sudo marmic logs
 sudo marmic restart
+sudo marmic update check
+sudo marmic update status
+sudo marmic update
 ```
 
 Данные:
 - `/opt/marmic` — runtime;
 - `/etc/marmic` — конфигурация;
 - `/var/lib/marmic` — DB, uploads, Registry identity и persistent state;
-- `/var/backups/marmic` — каталог будущих официальных backups.
+- `/var/backups/marmic` — known-good backups, создаваемые updater перед
+  активацией нового runtime.
 
 Повторный запуск installer не должен создавать новый `server_id` и не должен уничтожать `/var/lib/marmic`.
 
@@ -116,11 +124,13 @@ Production MarMic Hub Registry и Beget DNS provisioning развёрнуты. A
 Того VPS больше нет; production не используется вместо destructive test host.
 Новые uninstall/purge и другие разрушительные проверки требуют отдельной
 isolated Linux VM или специально созданного disposable host. В `0.13.0`
-добавлен официальный update agent с backup, health-check и rollback. В следующих
+добавлен официальный update agent с backup, health-check и rollback; после
+здоровой первой установки systemd timer включается автоматически. В следующих
 версиях остаются:
 - официальный backup/restore CLI;
 - arm64;
-- TURN.
+- публикация уже подготовленного embedded TURN/UDP runtime и внешний
+  acceptance-test relay allocation.
 
 ## Документация
 
@@ -129,6 +139,7 @@ isolated Linux VM или специально созданного disposable ho
 - [Сетевые порты](docs/ports.md)
 - [Устранение неполадок](docs/troubleshooting.md)
 - [Обновления](docs/updating.md)
+- [TURN и relay](docs/turn.md)
 - [Резервные копии](docs/backups.md)
 
 ## Лицензирование

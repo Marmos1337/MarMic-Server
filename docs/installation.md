@@ -12,7 +12,8 @@
 - Docker Compose plugin;
 - публичный IPv4;
 - доступ к GitHub Releases, `hub.marmos.udav.team` и ACME endpoints;
-- свободные TCP `80`, `443`, `7881` и UDP `50000-50100`.
+- свободные TCP `80`, `443`, `7881` и UDP `50000-50100` для текущего
+  стабильного `v0.15.0`.
 
 Проверка:
 
@@ -64,7 +65,9 @@ Installer:
 13. загружает bundled OCI images;
 14. запускает MarMic Server, LiveKit и Caddy;
 15. запускает HTTPS/ACME flow;
-16. выводит Owner Token.
+16. после успешной health-проверки устанавливает и включает
+    `marmic-update.timer`;
+17. выводит Owner Token.
 
 ## 5. DNS и HTTPS
 
@@ -106,6 +109,8 @@ sudo marmic owner-token regenerate
 sudo marmic status
 sudo marmic doctor
 sudo marmic version
+sudo marmic update check
+sudo marmic update status
 ```
 
 Затем проверьте HTTPS, подключение из MarMic, Owner claim, text chat и voice. Для voice лучше использовать два разных клиента/устройства.
@@ -142,12 +147,15 @@ sudo marmic logs
 sudo marmic restart
 sudo marmic version
 sudo marmic owner-token regenerate
+sudo marmic update check
+sudo marmic update status
+sudo marmic update
 ```
 
 ## 12. Что пока не входит в текущий release
 
-- automatic update agent;
 - официальный `marmic backup` / `marmic restore`;
 - arm64;
-- TURN;
+- TURN в опубликованном `v0.15.0` (подготовленная схема следующего artifact:
+  [turn.md](turn.md));
 - полностью автоматический сценарий для CGNAT.

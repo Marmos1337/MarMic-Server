@@ -5,15 +5,34 @@ MarMic Server `0.15.0` включает официальный update agent. О�
 Проверить и установить доступное обновление вручную:
 
 ```bash
+sudo marmic update check
 sudo marmic update
 ```
 
-Автоматическая проверка выполняется установленным scheduler. Статус и результат последнего обновления доступны через:
+Автоматическая проверка выполняется `marmic-update.timer`, который installer
+включает только после успешной первой health-проверки. Статус timer, lock,
+journal и последнего результата:
 
 ```bash
-sudo marmic status
-sudo marmic doctor
+sudo marmic update status
+systemctl status marmic-update.timer
+systemctl list-timers marmic-update.timer
 ```
+
+`sudo marmic status` показывает состояние Compose-сервисов, а
+`sudo marmic doctor` проверяет runtime, DNS, HTTPS, LiveKit, persistent storage
+и целостность SQLite. Это дополняющие команды, но не замена `update status`.
+
+Updater принимает только stable manifest для `linux/amd64`, запрещает
+параллельную активацию, проверяет размер и SHA-256, создаёт known-good backup и
+активирует новый Compose runtime. Если health-check или `doctor` нового runtime
+не проходит, updater автоматически возвращает previous known-good version и
+проверяет её здоровье. Не удаляйте `/var/lib/marmic/update` и
+`/var/backups/marmic` во время диагностики.
+
+Текущий manifest format подтверждает целостность artifact относительно
+manifest с помощью SHA-256, но ещё не содержит publisher signature. Скачивайте
+manifest и artifact только из официального MarMic Server release channel.
 
 Не заменяйте Docker images вручную и не удаляйте `/var/lib/marmic`: там находятся Registry identity, private key, DB, uploads и owner state.
 
