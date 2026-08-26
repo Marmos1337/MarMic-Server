@@ -1,6 +1,6 @@
 # Обновление MarMic Server
 
-MarMic Server `0.15.0` включает официальный update agent. Он получает stable manifest, проверяет SHA-256 artifact, создаёт backup, подготавливает новый runtime, переключает Compose только после подготовки и автоматически возвращает предыдущий known-good runtime при неуспешном health check.
+MarMic Server `0.16.0` включает официальный update agent. Он получает stable manifest, проверяет SHA-256 artifact, создаёт backup, подготавливает новый runtime, переключает Compose только после подготовки и автоматически возвращает предыдущий known-good runtime при неуспешном health check.
 
 Проверить и установить доступное обновление вручную:
 

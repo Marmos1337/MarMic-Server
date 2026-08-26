@@ -1,5 +1,7 @@
 # MarMic Server
 
+Официальный сайт MarMic: [https://marmic.udav.team/](https://marmic.udav.team/)
+
 MarMic Server — self-hosted сервер для MarMic. Он запускается на вашей Linux-машине, а пользователи подключаются к нему через MarMic Desktop или Web.
 
 Подходящие сценарии:
@@ -10,7 +12,7 @@ MarMic Server является проприетарным ПО. Публичны
 
 ## Быстрый старт
 
-Текущий стабильный release: `v0.15.0`, Linux `x86_64/amd64`.
+Текущий стабильный release: `v0.16.0`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -35,9 +37,8 @@ docker compose version
 - TCP `7881`;
 - UDP `50000-50100`.
 
-Это набор портов опубликованного `v0.15.0`. Подготовленная TURN-схема для
-следующего server artifact описана отдельно и не должна применяться к
-`v0.15.0`: [TURN и relay](docs/turn.md).
+Это набор портов опубликованного `v0.16.0`. TURN/TLS и relay остаются
+отдельным неподключённым этапом и не меняются этим release.
 
 Подробнее: [сетевые порты](docs/ports.md).
 
@@ -117,7 +118,7 @@ TCP `4000` и `7880` наружу открывать не нужно.
 
 ## Текущий статус
 
-Production MarMic Hub Registry и Beget DNS provisioning развёрнуты. Artifact `v0.15.0` собран из закреплённого source commit `b9a65a03a5790afe04da33808fba8e4a85e1a812` и совпадает с runtime, развёрнутым на Home и Official Hub. В `0.15.0` вошли recipient-specific notifications, permission-aware mention/reply delivery, исправления voice moderation/runtime reconciliation, общий attachment validation path и единая версия runtime/health/update metadata. Bootstrap сохраняет disk-backed staging в `/var/tmp`, проверку SHA-256 и безопасных путей; smoke пропущен по явному запросу владельца.
+Production MarMic Hub Registry и Beget DNS provisioning развёрнуты. Artifact `v0.16.0` собран из закреплённого source commit `23e28d12062e838c77e8f73393480844521b782a` и опубликован с проверкой SHA-256. В `0.16.0` вошли Account Server Directory sync, актуальные Web/PWA release metadata и исправления runtime/update paths. Bootstrap сохраняет disk-backed staging в `/var/tmp`, проверку SHA-256 и безопасных путей.
 
 Исторический disposable-VPS flow, ACME/HTTPS, Owner Claim и подключение второго
 аккаунта ранее были проверены и используются только как regression context.
