@@ -198,8 +198,8 @@ if ! MARMIC_SERVER_IMAGE="$("$WORK_DIR/$PAYLOAD/runtime/node" -p "require(proces
   exit 1
 fi
 export MARMIC_SERVER_IMAGE
-MARMIC_REGISTRY_URL="${MARMIC_REGISTRY_URL:-https://hub.marmos.udav.team}"
-MARMIC_IDENTITY_URL="${MARMIC_IDENTITY_URL:-https://hub.marmos.udav.team}"
+MARMIC_REGISTRY_URL="${MARMIC_REGISTRY_URL:-https://hub.mic.marhub.ru}"
+MARMIC_IDENTITY_URL="${MARMIC_IDENTITY_URL:-https://hub.mic.marhub.ru}"
 export MARMIC_REGISTRY_URL MARMIC_IDENTITY_URL
 
 echo "MarMic Server: запускаем установку runtime…"
