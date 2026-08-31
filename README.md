@@ -12,7 +12,7 @@ MarMic Server является проприетарным ПО. Публичны
 
 ## Быстрый старт
 
-Текущий стабильный release: `v0.16.0`, Linux `x86_64/amd64`.
+Текущий стабильный release: `v0.16.16`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -37,8 +37,9 @@ docker compose version
 - TCP `7881`;
 - UDP `50000-50100`.
 
-Это набор портов опубликованного `v0.16.0`. TURN/TLS и relay остаются
-отдельным неподключённым этапом и не меняются этим release.
+Это базовый direct-media набор портов опубликованного `v0.16.16`.
+Дополнительный embedded TURN/UDP описан отдельно и остаётся вне физического
+release acceptance этого hotfix.
 
 Подробнее: [сетевые порты](docs/ports.md).
 
@@ -112,13 +113,13 @@ sudo marmic update
 
 TCP `4000` и `7880` наружу открывать не нужно.
 
-Если провайдер использует CGNAT и у вас нет входящего публичного IPv4, сервер может быть недоступен извне. TURN пока не входит в текущую сборку.
+Если провайдер использует CGNAT и у вас нет входящего публичного IPv4, сервер может быть недоступен извне. Embedded TURN на той же машине не заменяет публичный IPv4 или внешний relay edge.
 
 Подробнее: [домашний сервер](docs/home-server.md).
 
 ## Текущий статус
 
-Production MarMic Hub Registry и Beget DNS provisioning развёрнуты. Artifact `v0.16.0` собран из закреплённого source commit `23e28d12062e838c77e8f73393480844521b782a` и опубликован с проверкой SHA-256. В `0.16.0` вошли Account Server Directory sync, актуальные Web/PWA release metadata и исправления runtime/update paths. Bootstrap сохраняет disk-backed staging в `/var/tmp`, проверку SHA-256 и безопасных путей.
+Production MarMic Hub Registry и Beget DNS provisioning развёрнуты. Artifact `v0.16.16` собран из закреплённого source commit `0542ed5f065ee03098b087cbf34f231bcd1c13fc` и опубликован с проверкой SHA-256. В `0.16.16` вошёл накопленный совместимый Server runtime для актуальных Desktop, Identity и Web contracts. Bootstrap сохраняет disk-backed staging в `/var/tmp`, проверку SHA-256 и безопасных путей.
 
 Исторический disposable-VPS flow, ACME/HTTPS, Owner Claim и подключение второго
 аккаунта ранее были проверены и используются только как regression context.
@@ -130,8 +131,7 @@ isolated Linux VM или специально созданного disposable ho
 версиях остаются:
 - официальный backup/restore CLI;
 - arm64;
-- публикация уже подготовленного embedded TURN/UDP runtime и внешний
-  acceptance-test relay allocation.
+- внешний acceptance-test embedded TURN/UDP relay allocation.
 
 ## Документация
 

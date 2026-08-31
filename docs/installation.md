@@ -1,6 +1,6 @@
 # Установка MarMic Server
 
-> Текущий стабильный release: `v0.16.0`.
+> Текущий стабильный release: `v0.16.16`.
 
 ## 1. Требования
 
@@ -13,7 +13,7 @@
 - публичный IPv4;
 - доступ к GitHub Releases, `hub.marmos.udav.team` и ACME endpoints;
 - свободные TCP `80`, `443`, `7881` и UDP `50000-50100` для текущего
-  стабильного `v0.16.0`.
+  стабильного `v0.16.16`.
 
 Проверка:
 
@@ -156,6 +156,6 @@ sudo marmic update
 
 - официальный `marmic backup` / `marmic restore`;
 - arm64;
-- TURN в опубликованном `v0.15.0` (подготовленная схема следующего artifact:
-  [turn.md](turn.md));
+- внешний TURN/TLS на `443/tcp` и физический forced-relay acceptance
+  embedded TURN/UDP ([turn.md](turn.md));
 - полностью автоматический сценарий для CGNAT.
