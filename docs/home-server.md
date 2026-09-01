@@ -34,11 +34,8 @@ MarMic Server можно запускать дома на Debian 12/Ubuntu 24.04
 ## 4. Установка
 
 ```bash
-sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"\$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 120 --connect-timeout 15 --max-time 1200 https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
+sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"\$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 120 --connect-timeout 15 --max-time 1200 https://mic.marhub.ru/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
 
-Короткий адрес `https://mic.marhub.ru/install.sh` пока не обслуживается
-Beget route и отвечает 404. До исправления route используйте GitHub endpoint
-из команды выше.
 ```
 
 Installer получает адрес `xxxxxxxxxxxxxxxxxxxx.srv.mic.marhub.ru`. DNS propagation может занимать **до 10 минут. Это нормально**.
