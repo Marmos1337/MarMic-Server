@@ -12,7 +12,7 @@ MarMic Server является проприетарным ПО. Публичны
 
 ## Быстрый старт
 
-Текущий стабильный Server release: `v0.16.18`, Linux `x86_64/amd64`.
+Текущий стабильный Server release: `v0.16.19`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -119,11 +119,14 @@ TCP `4000` и `7880` наружу открывать не нужно.
 
 ## Текущий статус
 
-В `v0.16.18` входят canonical self-host DNS
+В `v0.16.19` входят canonical self-host DNS
 (`<slug>.srv.mic.marhub.ru`), безопасный
 preflight занятых 80/443, loopback-порты для существующего reverse proxy,
 готовые Nginx/Caddy/Traefik snippets и проверяемый runtime bootstrap. Bootstrap
 сохраняет disk-backed staging в `/var/tmp`, проверку SHA-256 и безопасных путей.
+Также исправлено восстановление DNS для уже зарегистрированных серверов: повторный
+запуск installer и перезапуск Hub автоматически продолжают зависшую запись в статусе
+`reserved`, не меняя `server_id` и hostname.
 
 Исторический disposable-VPS flow, ACME/HTTPS, Owner Claim и подключение второго
 аккаунта ранее были проверены и используются только как regression context.
