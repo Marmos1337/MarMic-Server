@@ -20,13 +20,19 @@ sudo marmic doctor
 
 Повторный installer должен продолжить существующую server identity.
 
+Новый FQDN всегда имеет вид `<slug>.srv.mic.marhub.ru`. Если новый запуск
+получил `srv.marmic.udav.team`, остановите его: это несовместимый старый
+Registry endpoint. Installer удаляет такой orphan record best-effort и безопасно
+показывает ошибку для повторного запуска.
+
 ## HTTPS не готов
 
 Проверьте, что hostname резолвится в ваш public IP, TCP `80/443` доступны извне и Caddy запущен. DNS active и HTTPS ready — разные этапы.
 
 ## Text работает, voice нет
 
-На опубликованном `v0.15.0` проверьте UDP `50000-50100`, TCP `7881`, cloud firewall, host firewall и port forwarding. TCP `4000/7880` наружу открывать не нужно. TURN-порты этого release отсутствуют; подготовленная следующая схема приведена в [turn.md](turn.md).
+Для `v0.16.17` проверьте UDP `50000-50100`, TCP `7881`, cloud firewall,
+host firewall и port forwarding. TCP `4000/7880` наружу открывать не нужно.
 
 ## Owner Token не принимается
 
@@ -47,6 +53,13 @@ sudo marmic doctor
 ```
 
 Не используйте `docker system prune` как способ ремонта: он может затронуть другие Docker-проекты на том же хосте.
+
+## Порт 443 уже занят
+
+Это штатный сценарий. Не останавливайте nginx/Caddy/Traefik/Apache. Проверьте
+`/etc/marmic/runtime.env` и подключите соответствующий snippet из
+`/etc/marmic/proxy/`, затем выполните `sudo marmic doctor`. MarMic использует
+loopback high port и не пытается забрать host 443.
 
 ## Artifact не устанавливается
 

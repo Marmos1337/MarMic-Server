@@ -21,7 +21,7 @@ MarMic Server можно запускать дома на Debian 12/Ubuntu 24.04
 | Протокол | Внешний порт | Внутренний порт | Назначение |
 | --- | ---: | ---: | --- |
 | TCP | 80 | 80 | ACME / HTTP redirect |
-| TCP | 443 | 443 | HTTPS, API, WebSocket |
+| TCP | 443 | 443 | HTTPS, API, WebSocket (если нет внешнего proxy) |
 | TCP | 7881 | 7881 | LiveKit WebRTC TCP fallback |
 | UDP | 50000-50100 | 50000-50100 | LiveKit WebRTC media |
 
@@ -34,10 +34,14 @@ MarMic Server можно запускать дома на Debian 12/Ubuntu 24.04
 ## 4. Установка
 
 ```bash
-sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; echo "Скачиваем официальный MarMic Server installer…"; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 60 --connect-timeout 15 --max-time 180 https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
+sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"\$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 120 --connect-timeout 15 --max-time 1200 https://mic.marhub.ru/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
 ```
 
-Installer получает адрес `xxxxxxxx.srv.marmic.udav.team`. DNS propagation может занимать **до 10 минут. Это нормально**.
+Installer получает адрес `xxxxxxxxxxxxxxxxxxxx.srv.mic.marhub.ru`. DNS propagation может занимать **до 10 минут. Это нормально**.
+
+Если 443 уже занят Nginx/Caddy/Traefik, installer оставляет существующий
+proxy нетронутым, поднимает MarMic на loopback high port и сохраняет snippets в
+`/etc/marmic/proxy/`. Подключите snippet к своему proxy и повторите `sudo marmic doctor`.
 
 ## 5. Проверка из внешней сети
 
@@ -53,4 +57,4 @@ Registry выполняет безопасный DDNS update по authenticated 
 
 ## 8. CGNAT
 
-Признаки CGNAT: WAN IP роутера отличается от публичного IP или port forwarding настроен, но входящие соединения не доходят. Embedded TURN помогает при блокировке прямого UDP на стороне клиента, но не превращает домашний сервер без доступного публичного endpoint в relay из внешнего облака. Для опубликованного `v0.15.0` запросите у провайдера публичный IPv4. Подготовленная следующая схема описана в [turn.md](turn.md).
+Признаки CGNAT: WAN IP роутера отличается от публичного IP или port forwarding настроен, но входящие соединения не доходят. Для `v0.16.17` запросите у провайдера публичный IPv4; TURN в этом runtime не входит. Отдельная relay-схема описана в [turn.md](turn.md).

@@ -1,6 +1,6 @@
 # MarMic Server
 
-Официальный сайт MarMic: [https://marmic.udav.team/](https://marmic.udav.team/)
+Официальный сайт MarMic: [https://mic.marhub.ru/](https://mic.marhub.ru/)
 
 MarMic Server — self-hosted сервер для MarMic. Он запускается на вашей Linux-машине, а пользователи подключаются к нему через MarMic Desktop или Web.
 
@@ -12,7 +12,7 @@ MarMic Server является проприетарным ПО. Публичны
 
 ## Быстрый старт
 
-Текущий стабильный release: `v0.16.16`, Linux `x86_64/amd64`.
+Текущий стабильный Server release: `v0.16.17`, Linux `x86_64/amd64`.
 
 Перед установкой нужны:
 - Debian 12 или Ubuntu 24.04;
@@ -37,16 +37,16 @@ docker compose version
 - TCP `7881`;
 - UDP `50000-50100`.
 
-Это базовый direct-media набор портов опубликованного `v0.16.16`.
-Дополнительный embedded TURN/UDP описан отдельно и остаётся вне физического
-release acceptance этого hotfix.
+Если TCP `80` или `443` уже заняты reverse proxy, installer не останавливает
+его, а использует loopback high ports и пишет готовые snippets в
+`/etc/marmic/proxy/`.
 
 Подробнее: [сетевые порты](docs/ports.md).
 
 ### Установка
 
 ```bash
-sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; echo "Скачиваем официальный MarMic Server installer…"; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 60 --connect-timeout 15 --max-time 180 https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
+sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"\$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 120 --connect-timeout 15 --max-time 1200 https://mic.marhub.ru/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
 ```
 
 Команда сначала целиком скачивает bootstrap во временный файл и только затем
@@ -59,7 +59,7 @@ Bootstrap:
 3. проверяет Linux/amd64 и Docker;
 4. создаёт локальную Ed25519 identity сервера;
 5. регистрирует сервер в MarMic Registry;
-6. получает адрес вида `xxxxxxxx.srv.marmic.udav.team`;
+6. получает адрес вида `xxxxxxxxxxxxxxxxxxxx.srv.mic.marhub.ru`;
 7. ждёт DNS;
 8. запускает MarMic Server, LiveKit и Caddy;
 9. настраивает HTTPS;
@@ -113,13 +113,17 @@ sudo marmic update
 
 TCP `4000` и `7880` наружу открывать не нужно.
 
-Если провайдер использует CGNAT и у вас нет входящего публичного IPv4, сервер может быть недоступен извне. Embedded TURN на той же машине не заменяет публичный IPv4 или внешний relay edge.
+Если провайдер использует CGNAT и у вас нет входящего публичного IPv4, сервер может быть недоступен извне. TURN пока не входит в текущую сборку.
 
 Подробнее: [домашний сервер](docs/home-server.md).
 
 ## Текущий статус
 
-Production MarMic Hub Registry и Beget DNS provisioning развёрнуты. Artifact `v0.16.16` собран из закреплённого source commit `0542ed5f065ee03098b087cbf34f231bcd1c13fc` и опубликован с проверкой SHA-256. В `0.16.16` вошёл накопленный совместимый Server runtime для актуальных Desktop, Identity и Web contracts. Bootstrap сохраняет disk-backed staging в `/var/tmp`, проверку SHA-256 и безопасных путей.
+В `v0.16.17` входят canonical self-host DNS
+(`<slug>.srv.mic.marhub.ru`), безопасный
+preflight занятых 80/443, loopback-порты для существующего reverse proxy,
+готовые Nginx/Caddy/Traefik snippets и проверяемый runtime bootstrap. Bootstrap
+сохраняет disk-backed staging в `/var/tmp`, проверку SHA-256 и безопасных путей.
 
 Исторический disposable-VPS flow, ACME/HTTPS, Owner Claim и подключение второго
 аккаунта ранее были проверены и используются только как regression context.
@@ -131,7 +135,8 @@ isolated Linux VM или специально созданного disposable ho
 версиях остаются:
 - официальный backup/restore CLI;
 - arm64;
-- внешний acceptance-test embedded TURN/UDP relay allocation.
+- публикация уже подготовленного embedded TURN/UDP runtime и внешний
+  acceptance-test relay allocation.
 
 ## Документация
 

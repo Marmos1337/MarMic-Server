@@ -131,7 +131,8 @@ MarMic может предоставлять зарегистрированно�
 
 Например:
 
-`xxxxxxxx.srv.marmic.udav.team`
+`xxxxxxxxxxxxxxxxxxxx.srv.mic.marhub.ru` (new installations; legacy aliases
+remain valid only for existing servers)
 
 Правообладатель сохраняет контроль над доменной зоной MarMic и может изменять техническую реализацию этой системы.
 

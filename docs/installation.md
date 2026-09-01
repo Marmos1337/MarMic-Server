@@ -1,6 +1,6 @@
 # Установка MarMic Server
 
-> Текущий стабильный release: `v0.16.16`.
+> Текущий стабильный Server release: `v0.16.17`.
 
 ## 1. Требования
 
@@ -11,9 +11,9 @@
 - Docker Engine;
 - Docker Compose plugin;
 - публичный IPv4;
-- доступ к GitHub Releases, `hub.marmos.udav.team` и ACME endpoints;
-- свободные TCP `80`, `443`, `7881` и UDP `50000-50100` для текущего
-  стабильного `v0.16.16`.
+- доступ к GitHub Releases, `hub.mic.marhub.ru` и DNS/ACME endpoints;
+- Docker host ports `80/443` свободны **или** настроен внешний reverse proxy;
+- TCP `7881` и UDP `50000-50100` доступны для media.
 
 Проверка:
 
@@ -40,7 +40,7 @@ docker compose version
 ## 3. Установка
 
 ```bash
-sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; echo "Скачиваем официальный MarMic Server installer…"; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 60 --connect-timeout 15 --max-time 180 https://raw.githubusercontent.com/Marmos1337/MarMic-Server/main/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
+sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"\$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 120 --connect-timeout 15 --max-time 1200 https://mic.marhub.ru/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
 ```
 
 Это одна команда, но она не исполняет поток `curl` напрямую: bootstrap должен
@@ -59,7 +59,7 @@ Installer:
 7. регистрирует сервер в MarMic Registry;
 8. получает `server_id`;
 9. регистрирует public IP;
-10. получает hostname `xxxxxxxx.srv.marmic.udav.team`;
+10. получает hostname `xxxxxxxxxxxxxxxxxxxx.srv.mic.marhub.ru`;
 11. ждёт DNS active;
 12. создаёт persistent layout;
 13. загружает bundled OCI images;
@@ -156,6 +156,6 @@ sudo marmic update
 
 - официальный `marmic backup` / `marmic restore`;
 - arm64;
-- внешний TURN/TLS на `443/tcp` и физический forced-relay acceptance
-  embedded TURN/UDP ([turn.md](turn.md));
+- TURN не входит в опубликованный `v0.16.17` runtime (отдельная схема описана в
+  [turn.md](turn.md));
 - полностью автоматический сценарий для CGNAT.

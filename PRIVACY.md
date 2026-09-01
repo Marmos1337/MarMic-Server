@@ -93,7 +93,8 @@ MarMic Server может передавать:
 
 Например, сервер может получить:
 
-`xxxxxxxx.srv.marmic.udav.team`
+`xxxxxxxxxxxxxxxxxxxx.srv.mic.marhub.ru` (new installations; legacy servers
+may retain their original `srv.marmic.udav.team` alias)
 
 При изменении IP DNS-запись может быть автоматически обновлена.
 

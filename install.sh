@@ -1,17 +1,43 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.16.16"
+VERSION="0.16.17"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="fa75c055c27d92ee4581d690e6d08027576d65aa65b80179bb50a575a0d7c865"
+PINNED_SHA256="7293a5fdc89dad3535429daf38a6f97ff22ff5099b3db8ce229657e0bd9813a7"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
 STAGING_ROOT="${MARMIC_BOOTSTRAP_STAGING_ROOT:-/var/tmp}"
 REQUIRED_STAGING_BYTES=1073741824
 WORK_DIR=""
+CURRENT_STAGE="bootstrap"
+
+usage() {
+  cat <<'EOF'
+MarMic Server installer 0.16.17
+
+Usage: install.sh [--verbose] [--help] [--version]
+
+  --verbose  show download, Docker and diagnostic details
+  --help     show this help
+  --version  print the installer version
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --verbose) MARMIC_INSTALL_VERBOSE=1; export MARMIC_INSTALL_VERBOSE ;;
+    --help|-h) usage; exit 0 ;;
+    --version) echo "$VERSION"; exit 0 ;;
+    *) echo "Неизвестный аргумент: $1" >&2; usage >&2; exit 2 ;;
+  esac
+  shift
+done
 
 cleanup() {
   status="$1"
   trap - EXIT HUP INT TERM
+  if [ "$status" -ne 0 ]; then
+    echo "Установка MarMic Server завершилась с ошибкой на этапе ${CURRENT_STAGE}. Подробный повтор можно выполнить с --verbose." >&2
+  fi
   case "$WORK_DIR" in
     "$STAGING_ROOT"/marmic-bootstrap.*) rm -rf "$WORK_DIR" ;;
   esac
@@ -102,11 +128,16 @@ download_file() {
   partial="$destination.part"
   rm -f "$partial"
   echo "MarMic Server: скачиваем ${label}…"
+  if [ "${MARMIC_INSTALL_VERBOSE:-0}" = "1" ]; then
+    curl_flags="--progress-bar"
+  else
+    curl_flags="--silent"
+  fi
   if ! curl \
     --fail \
     --show-error \
     --location \
-    --progress-bar \
+    $curl_flags \
     --retry 4 \
     --retry-all-errors \
     --retry-delay 2 \
@@ -127,13 +158,15 @@ download_file() {
   mv "$partial" "$destination"
 }
 
-echo "MarMic Server $VERSION: начинаем безопасную установку."
+echo "MarMic Server $VERSION: безопасная установка."
 if [ "${MARMIC_BOOTSTRAP_VERIFY_ONLY:-0}" != "1" ]; then
-  echo "MarMic Server: проверяем Linux, архитектуру и Docker…"
+  CURRENT_STAGE="проверка системы"
+  echo "[1/6] Проверка системы"
   preflight
-  echo "MarMic Server: preflight пройден."
+  echo "[1/6] Готово"
 fi
-echo "MarMic Server: готовим disk-backed staging…"
+CURRENT_STAGE="загрузка и проверка runtime"
+echo "[2/6] Загрузка и проверка runtime"
 prepare_staging
 download_file "$BASE_URL/$ARTIFACT" "$WORK_DIR/$ARTIFACT" "runtime artifact"
 download_file "$BASE_URL/$ARTIFACT.sha256" "$WORK_DIR/$ARTIFACT.sha256" "SHA-256 manifest"
@@ -152,11 +185,12 @@ if [ "$expected_sha256" != "$PINNED_SHA256" ] || [ "$actual_sha256" != "$PINNED_
   echo "Ошибка проверки SHA-256 MarMic Server distribution." >&2
   exit 1
 fi
-echo "MarMic Server: SHA-256 подтверждён."
+echo "[2/6] SHA-256 подтверждён"
 
 PAYLOAD="marmic-server-${VERSION}-linux-amd64"
 ARCHIVE_LIST="$WORK_DIR/archive.list"
-echo "MarMic Server: проверяем структуру artifact…"
+CURRENT_STAGE="проверка структуры artifact"
+echo "[3/6] Проверка структуры artifact"
 if ! tar -tzf "$WORK_DIR/$ARTIFACT" >"$ARCHIVE_LIST"; then
   echo "Не удалось прочитать структуру artifact." >&2
   exit 1
@@ -170,7 +204,7 @@ else
   echo "Artifact содержит небезопасные пути." >&2
   exit 1
 fi
-echo "MarMic Server: распаковываем runtime…"
+echo "[4/6] Распаковка runtime"
 check_staging_space "распаковки"
 if ! tar -xzf "$WORK_DIR/$ARTIFACT" -C "$WORK_DIR" 2>"$WORK_DIR/tar.log"; then
   echo "Не удалось распаковать MarMic Server runtime." >&2
@@ -178,7 +212,7 @@ if ! tar -xzf "$WORK_DIR/$ARTIFACT" -C "$WORK_DIR" 2>"$WORK_DIR/tar.log"; then
   exit 1
 fi
 rm -f "$WORK_DIR/$ARTIFACT"
-echo "MarMic Server: artifact проверен и подготовлен."
+echo "[4/6] Runtime подготовлен"
 if [ "${MARMIC_INSTALL_VERBOSE:-0}" = "1" ] && [ -s "$WORK_DIR/tar.log" ]; then
   cat "$WORK_DIR/tar.log" >&2
 fi
@@ -202,10 +236,13 @@ MARMIC_REGISTRY_URL="${MARMIC_REGISTRY_URL:-https://hub.mic.marhub.ru}"
 MARMIC_IDENTITY_URL="${MARMIC_IDENTITY_URL:-https://hub.mic.marhub.ru}"
 export MARMIC_REGISTRY_URL MARMIC_IDENTITY_URL
 
-echo "MarMic Server: запускаем установку runtime…"
+CURRENT_STAGE="регистрация, DNS и запуск runtime"
+echo "[5/6] Регистрация, DNS и запуск runtime"
 "$WORK_DIR/$PAYLOAD/runtime/node" "$WORK_DIR/$PAYLOAD/bin/install.mjs" || {
   status=$?
   echo "Установка MarMic Server завершилась с ошибкой (код $status). Повторный запуск этой же команды безопасен." >&2
   exit "$status"
 }
+CURRENT_STAGE="проверка"
+echo "[6/6] Проверка"
 echo "MarMic Server $VERSION: установка завершена."
