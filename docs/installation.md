@@ -1,6 +1,6 @@
 # Установка MarMic Server
 
-> Текущий стабильный Server release: `v0.16.17`.
+> Текущий стабильный Server release: `v0.16.18`.
 
 ## 1. Требования
 
@@ -41,7 +41,6 @@ docker compose version
 
 ```bash
 sh -c 'set -eu; tmp="$(mktemp "${TMPDIR:-/tmp}/marmic-install.XXXXXX")"; trap "status=\$?; trap - EXIT HUP INT TERM; rm -f \"\$tmp\"; exit \$status" EXIT; trap "exit 129" HUP; trap "exit 130" INT; trap "exit 143" TERM; if ! curl --fail --show-error --location --retry 4 --retry-all-errors --retry-delay 2 --retry-max-time 120 --connect-timeout 15 --max-time 1200 https://mic.marhub.ru/install.sh --output "$tmp"; then echo "Не удалось полностью скачать MarMic Server installer." >&2; exit 1; fi; if [ ! -s "$tmp" ]; then echo "Загружен пустой MarMic Server installer." >&2; exit 1; fi; sudo sh "$tmp"'
-
 ```
 
 Это одна команда, но она не исполняет поток `curl` напрямую: bootstrap должен
@@ -157,6 +156,6 @@ sudo marmic update
 
 - официальный `marmic backup` / `marmic restore`;
 - arm64;
-- TURN не входит в опубликованный `v0.16.17` runtime (отдельная схема описана в
+- TURN не входит в опубликованный `v0.16.18` runtime (отдельная схема описана в
   [turn.md](turn.md));
 - полностью автоматический сценарий для CGNAT.

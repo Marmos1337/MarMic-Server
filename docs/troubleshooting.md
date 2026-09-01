@@ -31,7 +31,7 @@ Registry endpoint. Installer удаляет такой orphan record best-effort
 
 ## Text работает, voice нет
 
-Для `v0.16.17` проверьте UDP `50000-50100`, TCP `7881`, cloud firewall,
+Для `v0.16.18` проверьте UDP `50000-50100`, TCP `7881`, cloud firewall,
 host firewall и port forwarding. TCP `4000/7880` наружу открывать не нужно.
 
 ## Owner Token не принимается

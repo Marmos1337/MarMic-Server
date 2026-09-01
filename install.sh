@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.16.17"
+VERSION="0.16.18"
 ARTIFACT="marmic-server-${VERSION}-linux-amd64.tar.gz"
-PINNED_SHA256="7293a5fdc89dad3535429daf38a6f97ff22ff5099b3db8ce229657e0bd9813a7"
+PINNED_SHA256="f7297de3918e436bd72d17d33e545dea3b0d710c31bc88b418567ad04b6a3f3a"
 BASE_URL="${MARMIC_DISTRIBUTION_BASE_URL:-https://github.com/Marmos1337/MarMic-Server/releases/download/v${VERSION}}"
 STAGING_ROOT="${MARMIC_BOOTSTRAP_STAGING_ROOT:-/var/tmp}"
 REQUIRED_STAGING_BYTES=1073741824
@@ -12,7 +12,7 @@ CURRENT_STAGE="bootstrap"
 
 usage() {
   cat <<'EOF'
-MarMic Server installer 0.16.17
+MarMic Server installer 0.16.18
 
 Usage: install.sh [--verbose] [--help] [--version]
 
