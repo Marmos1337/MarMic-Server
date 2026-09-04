@@ -11,30 +11,30 @@ MarMic Server — self-hosted сервер для MarMic. Он запускае�
 
 MarMic Server является проприетарным ПО. Публичный репозиторий содержит документацию и обозримый bootstrap installer; исходный код server runtime здесь не публикуется.
 
-Подготовлены [заметки Server 0.18.2](docs/releases/0.18.2.md): исправление
-PG profile sync, защита Docker images и явное ограничение обычного PG→PG update.
-Bootstrap закреплён за проверенным release candidate; публикация проверяется отдельно.
+Подготовлены [заметки Server 0.18.3](docs/releases/0.18.3.md): отдельные
+подписанные SQLite→PG и PG→PG планы, crash-safe recovery и строгая защита Docker
+images. Bootstrap закреплён за проверенным release candidate; публикация
+проверяется отдельно.
 
 ## Быстрый старт
 
-Подготовлен Server **`v0.18.2`**, Linux `x86_64/amd64`, checkpoint **2026-09-04**.
+Подготовлен Server **`v0.18.3`**, Linux `x86_64/amd64`, checkpoint **2026-09-04**.
 Это проверенный release candidate; публичная публикация ещё не подтверждена.
-Предыдущий опубликованный Server release — `v0.18.0`. Bootstrap в этой ревизии
-закреплён за финальным архивом `0.18.2`; не запускайте его до появления
+Bootstrap в этой ревизии закреплён за финальным архивом `0.18.3`; не запускайте его до появления
 официального GitHub Release с соответствующими файлами.
 
-- Runtime source: `52d0ebba56c3c8107f82802a1c973a724462cfcd`.
-- Archive: `368656261` bytes, SHA-256
-  `7b76a4b19172cd7ac570ae111a68be94a060d1e94885d439ef665e2dbb714916`.
+- Runtime source: `6fa59d1c820071a98093f383b501fc82543adabd`.
+- Archive: `362382812` bytes, SHA-256
+  `dad2f01770d81c3d9af6c7a18f46bfc763910c1e730c60b22f2e92130c664f71`.
 - Bootstrap SHA-256:
-  `3ef0447b45a431c98de77214ff8861b5fa6efd8496f40a2cd80c2e35b6349942`.
+  `b79e80417808990d05a32e0d91e3de093abc344d01812bf5dbd1412694056572`.
 - Signed updater manifest: Ed25519, key `marmic-server-2026-01` v1; проверены
-  14 positive/negative crypto gates. Срок manifest — до
-  `2026-09-18T14:47:55.230Z`; детали и SHA — в [заметках релиза](docs/releases/0.18.2.md).
-- Проверены 28 целевых Server tests с реальным PostgreSQL. Обычный PG→PG updater
-  ещё не реализован: уже-PG Home/Hub требуют отдельной проверенной API-only
-  процедуры. Production/owner/media acceptance не объявляется пройденной по
-  результатам этих тестов.
+  positive/negative crypto gates. Срок manifest — до
+  `2026-09-18T20:39:16.593Z`; детали и SHA — в [заметках релиза](docs/releases/0.18.3.md).
+- Для существующего PostgreSQL есть отдельный подписанный companion, не
+  переиспользующий SQLite payload. Native gate прошёл 6/6 PG rollback/commit
+  сценариев и 3/3 cold-process recovery сценария. Production/owner/media
+  acceptance не объявляется пройденной по результатам этих локальных тестов.
 
 ### 0.18.0: данные и обновления — Русский
 

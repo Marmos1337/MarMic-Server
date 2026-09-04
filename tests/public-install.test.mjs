@@ -93,8 +93,8 @@ test('interrupted canonical download never executes', () => {
   assert.equal(existsSync(r.downloaded), false);
 });
 test('immutable bootstrap pins exact version, source, archive SHA and HTTPS', () => {
-  assert.equal(version, '0.18.0');
-  assert.equal(sourceCommit, '784167fb80b6eb0289fc9f0e46b63d4962f3b63c');
+  assert.equal(version, '0.18.3');
+  assert.equal(sourceCommit, '6fa59d1c820071a98093f383b501fc82543adabd');
   assert.match(pinnedSha, /^[a-f0-9]{64}$/u);
   assert.ok(read('README.md').includes(pinnedSha));
   assert.ok(
@@ -190,7 +190,7 @@ test('valid immutable payload verifies identity and cleans disk-backed staging',
   assert.equal(r.result.status, 0, r.result.stderr);
   assert.match(
     r.result.stdout,
-    /Pinned MarMic Server 0\.18\.0 archive verified/u,
+    /Pinned MarMic Server 0\.18\.3 archive verified/u,
   );
   assert.ok(readFileSync(r.trace, 'utf8').startsWith(r.staging));
   assert.deepEqual(readdirSync(r.staging), []);
@@ -273,4 +273,18 @@ test('public notices preserve approval, signature enforcement and frozen legacy 
     /legacy unsigned feed stays byte-identical at `0\.16\.21`/iu,
   );
   assert.match(notes, /runtime здесь не публикуется/u);
+});
+
+test('0.18.3 release notes bind both signed transition plans and exact public assets', () => {
+  const notes = read('docs/releases/0.18.3.md');
+  assert.match(notes, /6fa59d1c820071a98093f383b501fc82543adabd/u);
+  assert.match(notes, /13e9bd3cfec74c70dd063f5bc940691dcc57f36e/u);
+  assert.match(notes, /dad2f01770d81c3d9af6c7a18f46bfc763910c1e730c60b22f2e92130c664f71/u);
+  assert.match(notes, /231a8744588977d4eb5619f4efde2d8b2bb5ce0ad52c554922f55f8dd7aed222/u);
+  assert.match(notes, /f730382233d1c6454671069fe89d61d4056684a870ce6207c3c23e2bae49c179/u);
+  assert.match(notes, /e99095e0d7c6e73a2ae59d6be3d6554bc722b16075a64e37382fdfceb60e34da/u);
+  assert.match(notes, /server-update-linux-amd64-postgres\.signed\.json/u);
+  assert.match(notes, /approval_required/u);
+  assert.match(notes, /pre_traffic_only/u);
+  assert.match(notes, /legacy unsigned feed.*0\.16\.21/iu);
 });
