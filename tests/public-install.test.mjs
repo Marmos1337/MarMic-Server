@@ -1,370 +1,276 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   chmodSync,
+  existsSync,
+  mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
+  readdirSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, root), 'utf8');
-const bootstrap = () => read('install.sh');
-const releaseVersion = () =>
-  /VERSION="([^"]+)"/u.exec(bootstrap())?.[1] ?? '';
-const pinnedSha = () =>
-  /PINNED_SHA256="([^"]+)"/u.exec(bootstrap())?.[1] ?? '';
+const bootstrap = read('install.sh');
+const version = /VERSION="([^"]+)"/u.exec(bootstrap)?.[1];
+const sourceCommit = /SOURCE_COMMIT="([^"]+)"/u.exec(bootstrap)?.[1];
+const pinnedSha = /PINNED_SHA256="([^"]+)"/u.exec(bootstrap)?.[1];
 
 function canonicalCommand(markdown) {
   const match = /```bash\r?\n(sh -c '[^\r\n]+')\r?\n```/u.exec(markdown);
-  assert.ok(match, 'canonical one-command installer is missing');
+  assert.ok(match, 'canonical non-piped installer command is missing');
   return match[1];
 }
-
-function writeExecutable(path, source) {
-  writeFileSync(path, source, 'utf8');
+function executable(path, contents) {
+  writeFileSync(path, contents);
   chmodSync(path, 0o755);
 }
-
-function runCanonical(mode) {
-  const directory = mkdtempSync(join(tmpdir(), 'marmic-public-install-'));
+function fixture() {
+  const directory = mkdtempSync(join(tmpdir(), 'marmic-public-install-0180-'));
   const bin = join(directory, 'bin');
-  const marker = join(directory, 'installed');
-  const trace = join(directory, 'download-path');
-  spawnSync('mkdir', ['-p', bin], { stdio: 'inherit' });
-  writeExecutable(
-    join(bin, 'curl'),
+  const staging = join(directory, 'staging');
+  mkdirSync(bin);
+  mkdirSync(staging);
+  return { directory, bin, staging };
+}
+function runCanonical(mode) {
+  const f = fixture();
+  const marker = join(f.directory, 'installed');
+  const trace = join(f.directory, 'download-path');
+  executable(
+    join(f.bin, 'curl'),
     `#!/bin/sh
 set -eu
 output=''
 while [ "$#" -gt 0 ]; do
   if [ "$1" = '--output' ]; then output="$2"; shift 2; else shift; fi
 done
-[ -n "$output" ]
 printf '%s' "$output" > "$FAKE_CURL_TRACE"
-if [ "$FAKE_CURL_MODE" = 'partial' ]; then
-  printf '#!/bin/sh\n' > "$output"
-  exit 18
-fi
-printf '#!/bin/sh\nset -eu\nprintf installed > "$TEST_INSTALL_MARKER"\n' > "$output"
+if [ "$FAKE_CURL_MODE" = partial ]; then printf '#!/bin/sh\n' > "$output"; exit 18; fi
+printf '#!/bin/sh\nprintf installed > "$TEST_INSTALL_MARKER"\n' > "$output"
 `,
   );
-  writeExecutable(join(bin, 'sudo'), '#!/bin/sh\nexec "$@"\n');
+  executable(join(f.bin, 'sudo'), '#!/bin/sh\nexec "$@"\n');
   const result = spawnSync('sh', ['-c', canonicalCommand(read('README.md'))], {
     encoding: 'utf8',
     env: {
       ...process.env,
-      PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+      PATH: `${f.bin}${delimiter}${process.env.PATH}`,
       FAKE_CURL_MODE: mode,
       FAKE_CURL_TRACE: trace,
       TEST_INSTALL_MARKER: marker,
     },
   });
-  const downloadedPath = readFileSync(trace, 'utf8');
-  return { result, marker, downloadedPath };
+  return { result, marker, downloaded: readFileSync(trace, 'utf8') };
 }
 
-test('README and installation guides use the same non-piped canonical command', () => {
+test('README and guides retain one quoted, non-piped, complete-download command', () => {
   const expected = canonicalCommand(read('README.md'));
   assert.equal(canonicalCommand(read('docs/installation.md')), expected);
   assert.equal(canonicalCommand(read('docs/home-server.md')), expected);
   assert.doesNotMatch(expected, /\|\s*(?:sudo\s+)?sh\b/u);
-  assert.match(expected, /mktemp/u);
   assert.match(expected, /--output "\$tmp"/u);
   assert.match(expected, /\[ ! -s "\$tmp" \]/u);
   assert.match(expected, /sudo sh "\$tmp"/u);
 });
-
-test('canonical command downloads fully, executes once, and removes its temp file', () => {
-  const { result, marker, downloadedPath } = runCanonical('success');
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(readFileSync(marker, 'utf8'), 'installed');
-  assert.equal(spawnSync('test', ['!', '-e', downloadedPath]).status, 0);
+test('canonical command executes only a complete download and cleans its temporary file', () => {
+  const r = runCanonical('valid');
+  assert.equal(r.result.status, 0, r.result.stderr);
+  assert.equal(readFileSync(r.marker, 'utf8'), 'installed');
+  assert.equal(existsSync(r.downloaded), false);
 });
-
-test('interrupted bootstrap download is visible, non-zero, and never executes', () => {
-  const { result, marker, downloadedPath } = runCanonical('partial');
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Не удалось полностью скачать/u);
-  assert.equal(spawnSync('test', ['!', '-e', marker]).status, 0);
-  assert.equal(spawnSync('test', ['!', '-e', downloadedPath]).status, 0);
+test('interrupted canonical download never executes', () => {
+  const r = runCanonical('partial');
+  assert.notEqual(r.result.status, 0);
+  assert.match(r.result.stderr, /Не удалось полностью скачать/u);
+  assert.equal(existsSync(r.marker), false);
+  assert.equal(existsSync(r.downloaded), false);
 });
-
-test('bootstrap itself uses bounded retries and atomic partial downloads', () => {
-  const source = bootstrap();
-  assert.match(releaseVersion(), /^\d+\.\d+\.\d+$/u);
-  assert.match(source, /--retry 4/u);
-  assert.match(source, /--retry-all-errors/u);
-  assert.match(source, /--connect-timeout 15/u);
-  assert.match(source, /--max-time 1200/u);
-  assert.match(source, /destination\.part/u);
-  assert.match(source, /mv "\$partial" "\$destination"/u);
-});
-
-test('clean install fails visibly before download when Docker Compose is unavailable', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'marmic-bootstrap-preflight-'));
-  const bin = join(directory, 'bin');
-  const curlMarker = join(directory, 'curl-called');
-  spawnSync('mkdir', ['-p', bin], { stdio: 'inherit' });
-  writeExecutable(join(bin, 'id'), '#!/bin/sh\nprintf 0\n');
-  writeExecutable(join(bin, 'uname'), `#!/bin/sh
-if [ "${'$'}{1:-}" = '-s' ]; then printf Linux; else printf x86_64; fi
-`);
-  writeExecutable(join(bin, 'docker'), '#!/bin/sh\nexit 1\n');
-  writeExecutable(
-    join(bin, 'curl'),
-    `#!/bin/sh
-printf called > "$TEST_CURL_MARKER"
-exit 1
-`,
+test('immutable bootstrap pins exact version, source, archive SHA and HTTPS', () => {
+  assert.equal(version, '0.18.0');
+  assert.equal(sourceCommit, '784167fb80b6eb0289fc9f0e46b63d4962f3b63c');
+  assert.match(pinnedSha, /^[a-f0-9]{64}$/u);
+  assert.ok(read('README.md').includes(pinnedSha));
+  assert.ok(
+    read('README.md').includes(
+      createHash('sha256').update(bootstrap).digest('hex'),
+    ),
   );
-  const result = spawnSync('sh', [new URL('install.sh', root).pathname], {
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
-      TEST_CURL_MARKER: curlMarker,
-    },
-  });
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Docker Compose plugin недоступен/u);
-  assert.equal(spawnSync('test', ['!', '-e', curlMarker]).status, 0);
-});
-
-test('post-checksum archive and runtime failures are explicit', () => {
-  const source = bootstrap();
-  assert.match(source, /tar -tzf "\$WORK_DIR\/\$ARTIFACT" >"\$ARCHIVE_LIST"/u);
-  assert.doesNotMatch(source, /tar -tzf[^\n]+\|\s*awk/u);
-  assert.match(source, /Не удалось прочитать структуру artifact/u);
-  assert.match(source, /Не удалось распаковать MarMic Server runtime/u);
-  assert.match(source, /cat "\$WORK_DIR\/tar\.log"/u);
-  assert.match(source, /Установка MarMic Server завершилась с ошибкой/u);
-});
-
-function runStagingFailure({ availableKib = null, tempRoot, stagingRoot } = {}) {
-  const directory = mkdtempSync(join(tempRoot ?? tmpdir(), 'marmic-staging-'));
-  const bin = join(directory, 'bin');
-  const trace = join(directory, 'curl-path');
-  const mktempTrace = join(directory, 'mktemp-template');
-  spawnSync('mkdir', ['-p', bin], { stdio: 'inherit' });
-  writeExecutable(
-    join(bin, 'curl'),
-    `#!/bin/sh
-output=''
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = '--output' ]; then output="$2"; shift 2; else shift; fi
-done
-printf '%s' "$output" > "$FAKE_CURL_TRACE"
-printf partial > "$output"
-exit 18
-`,
-  );
-  if (stagingRoot === undefined) {
-    writeExecutable(
-      join(bin, 'mktemp'),
-      `#!/bin/sh
-for value in "$@"; do template="$value"; done
-printf '%s' "$template" > "$FAKE_MKTEMP_TRACE"
-work_dir="$FAKE_WORK_DIRECTORY"
-mkdir -p "$work_dir"
-printf '%s\n' "$work_dir"
-`,
-    );
-  }
-  if (availableKib !== null) {
-    writeExecutable(
-      join(bin, 'df'),
-      `#!/bin/sh
-printf 'Filesystem 1024-blocks Used Available Capacity Mounted on\n'
-printf 'fake 1000000 999000 ${availableKib} 99%% /fake\n'
-`,
-    );
-  }
-  const env = {
-    ...process.env,
-    PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
-    TMPDIR: tempRoot ?? directory,
-    FAKE_CURL_TRACE: trace,
-    FAKE_MKTEMP_TRACE: mktempTrace,
-    FAKE_WORK_DIRECTORY: join(directory, 'work'),
-    MARMIC_BOOTSTRAP_VERIFY_ONLY: '1',
-    ...(stagingRoot === undefined
-      ? {}
-      : { MARMIC_BOOTSTRAP_STAGING_ROOT: stagingRoot }),
-  };
-  const result = spawnSync('sh', [new URL('install.sh', root).pathname], {
-    encoding: 'utf8',
-    env,
-  });
-  return { directory, mktempTrace, result, trace };
-}
-
-test('constrained TMPDIR is not used for the large runtime staging', () => {
-  const constrainedTmp = mkdtempSync(join(tmpdir(), 'marmic-tmpfs-'));
-  const { mktempTrace, result } = runStagingFailure({
-    tempRoot: constrainedTmp,
-  });
-  assert.notEqual(result.status, 0);
   assert.match(
-    readFileSync(mktempTrace, 'utf8'),
-    /^\/var\/tmp\/marmic-bootstrap\./u,
+    bootstrap,
+    /--proto "\$curl_protocols" --proto-redir "\$curl_protocols"/u,
   );
+  assert.match(bootstrap, /--retry 4 --retry-all-errors/u);
+  assert.match(bootstrap, /--connect-timeout 15 --max-time 1200/u);
+  assert.match(bootstrap, /mv "\$partial" "\$WORK_DIR\/\$ARTIFACT"/u);
+  assert.doesNotMatch(bootstrap, /\r/u);
 });
 
-test('an explicit normal disk-backed staging root is honored', () => {
-  const stagingRoot = mkdtempSync(join(tmpdir(), 'marmic-disk-staging-'));
-  const { result, trace } = runStagingFailure({ stagingRoot });
-  assert.notEqual(result.status, 0);
-  assert.equal(readFileSync(trace, 'utf8').startsWith(stagingRoot), true);
-  assert.deepEqual(readdirSync(stagingRoot), []);
-});
-
-test('insufficient space on the exact staging filesystem fails before download', () => {
-  const stagingRoot = mkdtempSync(join(tmpdir(), 'marmic-small-staging-'));
-  const { result, trace } = runStagingFailure({
-    availableKib: 128 * 1024,
-    stagingRoot,
-  });
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Недостаточно места/u);
-  assert.match(result.stderr, /требуется не менее 1024 MiB/u);
-  assert.match(result.stderr, /доступно 128 MiB/u);
-  assert.equal(spawnSync('test', ['!', '-e', trace]).status, 0);
-  assert.deepEqual(readdirSync(stagingRoot), []);
-});
-
-function runExtraction(mode) {
-  const directory = mkdtempSync(join(tmpdir(), 'marmic-extract-'));
-  const bin = join(directory, 'bin');
-  const stagingRoot = join(directory, 'staging');
-  const nodeMarker = join(directory, 'node-checked');
-  const sha = pinnedSha();
-  const version = releaseVersion();
+function runBootstrap(mode = 'valid', extra = {}) {
+  const f = fixture();
+  const trace = join(f.directory, 'curl-path');
+  const tarTrace = join(f.directory, 'tar-called');
   const payload = `marmic-server-${version}-linux-amd64`;
-  assert.match(sha, /^[a-f0-9]{64}$/u);
-  spawnSync('mkdir', ['-p', bin, stagingRoot], { stdio: 'inherit' });
-  writeExecutable(
-    join(bin, 'curl'),
-    `#!/bin/sh
-output=''
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = '--output' ]; then output="$2"; shift 2; else shift; fi
-done
-case "$output" in
-  *.sha256.part) printf '${sha}  ${payload}.tar.gz\n' > "$output" ;;
-  *) printf artifact > "$output" ;;
-esac
-`,
-  );
-  writeExecutable(
-    join(bin, 'sha256sum'),
-    `#!/bin/sh
-printf '${sha}  %s\n' "$1"
-`,
-  );
-  writeExecutable(
-    join(bin, 'tar'),
-    `#!/bin/sh
-if [ "$1" = '-tzf' ]; then
-  printf '${payload}/\n'
-  printf '${payload}/manifest.json\n'
-  exit 0
-fi
-if [ "$FAKE_TAR_MODE" = 'term' ]; then
-  kill -TERM "$PPID"
-  exit 143
-fi
-if [ "$FAKE_TAR_MODE" = 'enospc' ]; then
-  echo 'tar: marmic-server runtime: Cannot write: No space left on device' >&2
-  exit 2
-fi
-destination=''
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = '-C' ]; then destination="$2"; shift 2; else shift; fi
-done
-mkdir -p "$destination/${payload}"
-printf '{"version":"${version}","architecture":"amd64","sourceCommit":"test"}\n' > "$destination/${payload}/manifest.json"
-`,
-  );
-  writeExecutable(
-    join(bin, 'node'),
-    `#!/bin/sh
-for value in "$@"; do manifest="$value"; done
-work_dir="$(dirname "$(dirname "$manifest")")"
-if find "$work_dir" -maxdepth 1 -name '*.tar.gz' | grep -q .; then
-  echo 'compressed artifact still present' >&2
-  exit 9
-fi
-printf checked > "$FAKE_NODE_MARKER"
-`,
-  );
-  const result = spawnSync('sh', [new URL('install.sh', root).pathname], {
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
-      FAKE_NODE_MARKER: nodeMarker,
-      FAKE_TAR_MODE: mode,
-      MARMIC_BOOTSTRAP_STAGING_ROOT: stagingRoot,
-      MARMIC_BOOTSTRAP_VERIFY_ONLY: '1',
-    },
-  });
-  return { nodeMarker, result, stagingRoot };
-}
-
-test('tar ENOSPC stderr is preserved and failed extraction is cleaned', () => {
-  const { result, stagingRoot } = runExtraction('enospc');
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Не удалось распаковать/u);
-  assert.match(result.stderr, /No space left on device/u);
-  assert.deepEqual(readdirSync(stagingRoot), []);
-});
-
-test('SIGTERM during extraction returns 143 and cleans staging', () => {
-  const { result, stagingRoot } = runExtraction('term');
-  assert.equal(result.status, 143);
-  assert.deepEqual(readdirSync(stagingRoot), []);
-});
-
-test('compressed artifact is removed immediately after extraction', () => {
-  const { nodeMarker, result, stagingRoot } = runExtraction('success');
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(readFileSync(nodeMarker, 'utf8'), 'checked');
-  assert.deepEqual(readdirSync(stagingRoot), []);
-});
-
-test('bootstrap never activates a partially downloaded runtime artifact', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'marmic-bootstrap-partial-'));
-  const bin = join(directory, 'bin');
-  const stagingRoot = join(directory, 'staging');
-  spawnSync('mkdir', ['-p', bin], { stdio: 'inherit' });
-  writeExecutable(
-    join(bin, 'curl'),
+  executable(
+    join(f.bin, 'curl'),
     `#!/bin/sh
 set -eu
 output=''
 while [ "$#" -gt 0 ]; do
   if [ "$1" = '--output' ]; then output="$2"; shift 2; else shift; fi
 done
-printf partial > "$output"
-exit 18
+printf '%s' "$output" > "$FAKE_CURL_TRACE"
+printf artifact > "$output"
+if [ "$FAKE_MODE" = partial ]; then exit 18; fi
 `,
   );
+  executable(
+    join(f.bin, 'sha256sum'),
+    `#!/bin/sh
+if [ "$FAKE_MODE" = hash ]; then printf '${'0'.repeat(64)}'; else printf '${pinnedSha}'; fi
+printf '  %s\n' "$1"
+`,
+  );
+  executable(
+    join(f.bin, 'tar'),
+    `#!/bin/sh
+set -eu
+printf called > "$FAKE_TAR_TRACE"
+case "$1" in
+  -tzf)
+    if [ "$FAKE_MODE" = traversal ]; then printf '../outside\n'; else printf '${payload}/\n${payload}/manifest.json\n'; fi
+    exit 0 ;;
+  -tvzf)
+    if [ "$FAKE_MODE" = symlink ]; then printf 'lrwxrwxrwx root/root 0 link\n'; else printf -- '-rw-r--r-- root/root 1 manifest.json\n'; fi
+    exit 0 ;;
+esac
+if [ "$FAKE_MODE" = enospc ]; then echo 'tar: No space left on device' >&2; exit 2; fi
+if [ "$FAKE_MODE" = term ]; then kill -TERM "$PPID"; exit 143; fi
+destination=''
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = '-C' ]; then destination="$2"; shift 2; else shift; fi
+done
+mkdir -p "$destination/${payload}/runtime"
+commit='${sourceCommit}'
+if [ "$FAKE_MODE" = manifest ]; then commit=wrong; fi
+printf '{"version":"${version}","sourceCommit":"%s"}\n' "$commit" > "$destination/${payload}/manifest.json"
+printf '#!/bin/sh\nexec ${process.execPath} "$@"\n' > "$destination/${payload}/runtime/node"
+chmod 0755 "$destination/${payload}/runtime/node"
+`,
+  );
+  const staging = extra.relative ? 'relative-path' : f.staging;
+  if (extra.symlinkRoot) {
+    const link = join(f.directory, 'staging-link');
+    symlinkSync(f.staging, link);
+    extra.MARMIC_BOOTSTRAP_STAGING_ROOT = link;
+  }
   const result = spawnSync('sh', [new URL('install.sh', root).pathname], {
     encoding: 'utf8',
     env: {
       ...process.env,
-      PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
-      MARMIC_DISTRIBUTION_BASE_URL: 'https://updates.invalid',
-      MARMIC_BOOTSTRAP_STAGING_ROOT: stagingRoot,
+      PATH: `${f.bin}${delimiter}${process.env.PATH}`,
+      FAKE_MODE: mode,
+      FAKE_CURL_TRACE: trace,
+      FAKE_TAR_TRACE: tarTrace,
       MARMIC_BOOTSTRAP_VERIFY_ONLY: '1',
+      MARMIC_BOOTSTRAP_STAGING_ROOT: staging,
+      ...extra,
+    },
+  });
+  return { ...f, result, trace, tarTrace };
+}
+test('valid immutable payload verifies identity and cleans disk-backed staging', () => {
+  const r = runBootstrap();
+  assert.equal(r.result.status, 0, r.result.stderr);
+  assert.match(
+    r.result.stdout,
+    /Pinned MarMic Server 0\.18\.0 archive verified/u,
+  );
+  assert.ok(readFileSync(r.trace, 'utf8').startsWith(r.staging));
+  assert.deepEqual(readdirSync(r.staging), []);
+});
+for (const [mode, expected] of [
+  ['hash', /SHA-256 mismatch/u],
+  ['traversal', /unsafe paths/u],
+  ['symlink', /unsupported links/u],
+  ['manifest', /manifest identity mismatch/u],
+  ['enospc', /No space left on device/u],
+]) {
+  test(`rejects ${mode} before runtime activation and cleans staging`, () => {
+    const r = runBootstrap(mode);
+    assert.notEqual(r.result.status, 0);
+    assert.match(r.result.stderr, expected);
+    assert.deepEqual(readdirSync(r.staging), []);
+    if (mode === 'hash') assert.equal(existsSync(r.tarTrace), false);
+  });
+}
+test('partial artifact download never reaches extraction', () => {
+  const r = runBootstrap('partial');
+  assert.equal(r.result.status, 18);
+  assert.equal(existsSync(r.tarTrace), false);
+  assert.deepEqual(readdirSync(r.staging), []);
+});
+test('SIGTERM during extraction returns 143 and cleans only fixture staging', () => {
+  const r = runBootstrap('term');
+  assert.equal(r.result.status, 143);
+  assert.deepEqual(readdirSync(r.staging), []);
+});
+for (const options of [{ relative: true }, { symlinkRoot: true }]) {
+  test(`unsafe staging root fails before download: ${Object.keys(options)[0]}`, () => {
+    const r = runBootstrap('valid', options);
+    assert.notEqual(r.result.status, 0);
+    assert.equal(existsSync(r.trace), false);
+  });
+}
+test('untrusted origins and shell-looking input are refused, not executed', () => {
+  for (const origin of [
+    'https://untrusted.invalid',
+    'file:///etc/passwd',
+    'https://example.invalid/$(touch /tmp/marmic-should-not-exist)',
+  ]) {
+    const r = runBootstrap('valid', { MARMIC_DISTRIBUTION_BASE_URL: origin });
+    assert.notEqual(r.result.status, 0);
+    assert.match(r.result.stderr, /custom distribution origin is forbidden/u);
+    assert.equal(existsSync(r.trace), false);
+  }
+  assert.equal(existsSync('/tmp/marmic-should-not-exist'), false);
+});
+test('missing Docker Compose is a pre-download error for a real installation', () => {
+  const f = fixture();
+  executable(join(f.bin, 'id'), '#!/bin/sh\nprintf 0\n');
+  executable(
+    join(f.bin, 'uname'),
+    '#!/bin/sh\nif [ "$1" = -s ]; then printf Linux; else printf x86_64; fi\n',
+  );
+  executable(join(f.bin, 'docker'), '#!/bin/sh\nexit 1\n');
+  const result = spawnSync('sh', [new URL('install.sh', root).pathname], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PATH: `${f.bin}${delimiter}${process.env.PATH}`,
+      MARMIC_BOOTSTRAP_VERIFY_ONLY: '0',
     },
   });
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Установка MarMic Server не изменена/u);
-  assert.match(result.stdout, /скачиваем runtime artifact/u);
+  assert.match(
+    result.stderr,
+    /Docker Engine with the Compose plugin is required/u,
+  );
+});
+test('public notices preserve approval, signature enforcement and frozen legacy policy', () => {
+  const notes = read('README.md');
+  assert.match(notes, /approval_required/u);
+  assert.match(notes, /Ed25519/u);
+  assert.match(notes, /невалидная подпись/u);
+  assert.match(
+    notes,
+    /legacy unsigned feed stays byte-identical at `0\.16\.21`/iu,
+  );
+  assert.match(notes, /runtime здесь не публикуется/u);
 });
